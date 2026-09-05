@@ -1,0 +1,14 @@
+node_modules/
+.local/
+.tmp/
+artifacts/
+*.log
+playwright-report/
+test-results/
+*.tgz
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+docs/activation-notes.md

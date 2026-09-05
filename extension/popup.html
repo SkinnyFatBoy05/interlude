@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Interlude</title><link rel="stylesheet" href="popup.css"></head>
+<body><header><span class="mark" aria-hidden="true">Ⅱ</span><strong>interlude</strong></header>
+<p>Enjoy the wait. Come back in the moment.</p>
+<form id="pair-form"><label for="code">Connection code</label><input id="code" type="password" autocomplete="off" placeholder="Copy from the local companion" required><button>Connect</button></form>
+<label for="tabs">Your media tab</label><select id="tabs"><option value="">Open a media site first</option></select><button id="select" class="secondary">Use this tab</button>
+<p class="hint">YouTube, social feeds, streaming video and music. Selecting a tab requests access to its site and registered embedded players. Player compatibility varies.</p>
+<p id="status" role="status" aria-live="polite">Connecting…</p><button id="release" class="secondary" hidden>Release playback</button><footer><a href="http://127.0.0.1:4318/" target="_blank" rel="noopener">Open companion</a><button id="disconnect" class="link">Disconnect</button></footer>
+<script type="module" src="popup.js"></script></body></html>

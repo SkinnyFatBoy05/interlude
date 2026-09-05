@@ -83,7 +83,7 @@ The JavaScript tests exercise both dispatch paths, bundle configuration, cancell
 
 **Verified locally on Windows, 2026-09-05:** the native Windows helper compiles and its read-only smoke passes; platform and installer tests pass. A live read-only diagnostic identified exactly one Codex window and correctly reported `not_foreground`, with no attention request. Earlier live testing observed Windows denying background focus. No OS focus restrictions were modified.
 
-**Not verified on macOS hardware here:** Swift compilation, interactive activation, AX permission attribution, and multi-display resizing. A successful future macOS CI compile/smoke establishes compiler/runtime correctness, not an interactive desktop result. Before declaring a platform release validated, perform these checks on each OS with the real Codex app:
+**Verified on macOS CI, 2026-09-05:** Swift compilation and native protocol smoke passed on GitHub's macOS runner with Node 22 and 24. This establishes compiler/runtime correctness, not an interactive desktop result. **Interactive activation, AX permission attribution, and multi-display resizing remain unverified.** Before declaring a platform release validated, perform these checks on each OS with the real Codex app:
 
 1. Observe diagnostics with Codex closed, one window open, and multiple windows open; status must not move focus.
 2. Return from a selected YouTube tab with maximize enabled and disabled, including minimized Codex and an already maximized window.

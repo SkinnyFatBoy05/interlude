@@ -6,7 +6,7 @@ import { SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor } from '../ex
 
 const code = (await readFile(new URL('../extension/background.js', import.meta.url), 'utf8')).replace(/^import .*;\r?\n/gm, '');
 const flush = async () => { for (let count = 0; count < 8; count++) await new Promise(resolve => setImmediate(resolve)); };
-function event() { const listeners = []; return { addListener(fn) { listeners.push(fn); }, emit(...args) { for (const fn of listeners) fn(...args); } }; }
+function event() { const listeners = []; return { addListener(fn) { listeners.push(fn); }, emit(...args) { let handled = false; for (const fn of listeners) if (fn(...args) === true) handled = true; return handled; } }; }
 async function background(t, { selected = 12, url = 'https://www.youtube.com/watch?v=one', mediaReady = false, failure = false, perform } = {}) {
   const local = { token: 'a'.repeat(64) }; const session = { selection: selected ? { tabId: selected } : {} };
   const tabs = new Map([[12, { id: 12, windowId: 8, url, title: 'Chosen media' }]]);
@@ -41,7 +41,7 @@ async function background(t, { selected = 12, url = 'https://www.youtube.com/wat
     request(message, sender = { id: 'test', url: 'chrome-extension://test/popup.html' }) {
       return new Promise(resolve => {
         const handled = chrome.runtime.onMessage.emit(message, sender, resolve);
-        void handled;
+        if (!handled) resolve(undefined);
       });
     },
   };
@@ -52,6 +52,29 @@ test('a selected text-only feed remains selected while mediaReady is false', asy
   const result = await h.request({ type: 'status' });
   assert.equal(result.state.selected, true); assert.equal(result.state.mediaReady, false); assert.equal(result.state.platform, 'instagram');
   assert.ok(h.messages.some(message => message.type === 'browser' && message.selected && !message.mediaReady));
+});
+test('the exact extension popup can pair when opened in an ordinary browser tab', async t => {
+  const h = await background(t, { selected: null });
+  const sender = { id: 'test', url: 'chrome-extension://test/popup.html', tab: { id: 77, url: 'chrome-extension://test/popup.html' }, frameId: 0 };
+  const before = await h.request({ type: 'status' }, sender);
+  assert.equal(before?.ok, true);
+  const paired = await h.request({ type: 'pair', token: 'b'.repeat(64) }, sender);
+  assert.equal(paired?.ok, true); assert.equal(h.local.token, 'b'.repeat(64));
+  await flush();
+  assert.ok(h.messages.some(message => message.type === 'hello' && message.token === 'b'.repeat(64)));
+});
+test('content scripts, foreign extensions and deceptive popup URLs cannot pair', async t => {
+  const h = await background(t);
+  const senders = [
+    { id: 'test', url: 'https://www.youtube.com/watch?v=one', tab: { id: 12 } },
+    { id: 'other-extension', url: 'chrome-extension://test/popup.html', tab: { id: 77 } },
+    { id: 'test', url: 'chrome-extension://test/popup.html.evil', tab: { id: 77 } },
+    { id: 'test', url: 'chrome-extension://test/popup.html?spoof', tab: { id: 77 } },
+    { id: 'test', url: 'chrome-extension://other-extension/popup.html', tab: { id: 77 } },
+    { id: 'test', tab: { id: 77 } },
+  ];
+  for (const sender of senders) assert.equal(await h.request({ type: 'pair', token: 'b'.repeat(64) }, sender), undefined);
+  assert.equal(h.local.token, 'a'.repeat(64));
 });
 test('an inaccessible player does not silently clear the selected tab', async t => {
   const h = await background(t, { failure: true }); const result = await h.request({ type: 'status' });

@@ -45,7 +45,8 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     await popup.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(popup.locator('#status')).toContainText(/Connected/i);
     await expect(popup.locator('#tabs option')).toContainText(['Interlude media fixture']);
-    await popup.getByLabel('Your media tab', { exact: true }).selectOption({ label: 'Interlude media fixture' });
+    const mediaOption = popup.locator('#tabs option').filter({ hasText: 'Interlude media fixture' });
+    await popup.getByLabel('Your media tab', { exact: true }).selectOption(await mediaOption.getAttribute('value'));
     await popup.getByRole('button', { name: 'Use this tab', exact: true }).click();
 
     const dashboard = await context.newPage();

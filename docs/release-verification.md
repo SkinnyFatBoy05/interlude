@@ -4,13 +4,13 @@ This record distinguishes implementation and automated tests from tests on real 
 
 | Area | Verification required | Current evidence |
 | --- | --- | --- |
-| State and transport | Regression tests on Windows, macOS, Linux and Node 22/24 | Local focused suites pass; combined CI is the release gate |
+| State and transport | Regression tests on Windows, macOS, Linux and Node 22/24 | First CI run passed all six OS/Node jobs; updated popup regression suite awaiting final CI |
 | Windows native helper | Compile, protocol smoke, unique package/window detection | Local compilation and read-only protocol passed; direct background foreground activation was declined by Windows |
-| macOS native helper | Compile/protocol, then interactive activation and resize with granted/denied permissions | Source and mocked contract tests implemented; Mac CI and real desktop checks pending |
-| Browser integration | Real MV3 worker, popup, content script, local backend, media ownership and autoplay fixture | Chromium CI fixture implemented; first CI run pending |
-| Dashboard | Both modes, permission/question/completion states, learning, setup, diagnostics, narrow viewport | Earlier internal-browser prototype checks passed; updated dashboard validation pending |
+| macOS native helper | Compile/protocol, then interactive activation and resize with granted/denied permissions | Actual Swift compilation and read-only smoke passed on macOS CI with Node 22/24; interactive desktop checks pending |
+| Browser integration | Real MV3 worker, popup, content script, local backend, media ownership and autoplay fixture | First Chromium run found a popup sender-routing defect; fixed with reproduced regression; final run pending |
+| Dashboard | Both modes, permission/question/completion states, learning, setup, diagnostics, narrow viewport | Three Chromium dashboard checks passed, including delayed bootstrap and 390px layout; internal browser checked setup, both modes, attention states, lessons, and actual read-only Windows diagnostics without errors |
 | Individual services | Signed-in playback and feed navigation on each supported browser | See [platforms.md](platforms.md); broad live-service checks pending |
-| Release privacy | Explicit file allowlist, archive contents and dependency audit | Packaging checks implemented; final archive/audit pending |
+| Release privacy | Explicit file allowlist, archive contents and dependency audit | Source/extension archives built successfully; exclusion and timezone-stability tests passed; npm audit: 0 known vulnerabilities |
 
 The historical YouTube-only prototype paused a real visible video and exited fullscreen using simulated task events. Its CLI hooks also delivered a real SessionEnd event. Those observations do not establish the full updated desktop-to-media loop.
 

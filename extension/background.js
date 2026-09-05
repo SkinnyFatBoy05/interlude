@@ -163,7 +163,10 @@ async function popupState() {
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return;
-  if (sender.tab) {
+  // An extension page opened in a normal tab also has sender.tab. Authenticate
+  // the exact extension page before distinguishing content-script messages.
+  const isPopup = sender.url === chrome.runtime.getURL('popup.html');
+  if (!isPopup && sender.tab) {
     if (!platformFor(sender.url) || !['media-bootstrap', 'media-release', 'media-change'].includes(message.type)) return;
     initialized.then(async () => {
       if (selection.tabId !== sender.tab.id) return { ok: false, gate: false };
@@ -173,7 +176,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     }).then(respond).catch(error => respond({ ok: false, message: error.message }));
     return true;
   }
-  if (sender.url !== chrome.runtime.getURL('popup.html')) return;
+  if (!isPopup) return;
   if (message.type === 'status') {
     popupState().then(respond).catch(error => respond({ ok: false, message: error.message }));
     return true;

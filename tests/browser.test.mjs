@@ -33,7 +33,7 @@ function media({ players = [mockMedia()], pathname = '/watch?v=one', bootstrapGa
     spaNavigate() { page = '/new-feed-item'; },
     autoplay(player) { player.paused = false; for (const fn of events.get('play') || []) fn({ target: player }); },
     close() { for (const timer of timers) clearInterval(timer); },
-    send(action, resume = true) { return new Promise(resolve => listener({ type: 'interlude-media', action, resume }, { id: 'test' }, resolve)); },
+    send(action, resume = true, options = {}) { return new Promise(resolve => listener({ type: 'interlude-media', action, resume, ...options }, { id: 'test' }, resolve)); },
   };
 }
 function harness(t, options) { const h = media(options); t.after(() => h.close()); return h; }
@@ -73,6 +73,31 @@ test('a player refusing pause returns failure', async t => { const h = harness(t
 test('cancellation stops a play promise that resolves late', async t => {
   let start; const delayedPlay = new Promise(resolve => { start = resolve; }); const h = harness(t, { players: [mockMedia({ delayedPlay })] });
   await h.send('pause'); const pending = h.send('resume'); const cancel = h.send('cancel'); start(); await Promise.all([pending, cancel]); assert.equal(h.video.paused, true); assert.equal((await h.send('status')).gate, true);
+});
+test('cancelling a pause before acknowledgment preserves ownership for the next break', async t => {
+  const main = mockMedia(); const preview = mockMedia({ source: 'preview', muted: true, paused: true, top: 900 });
+  const h = harness(t, { players: [main, preview] });
+  const pendingPause = h.send('pause'); assert.equal(main.paused, true);
+  h.autoplay(preview); assert.equal(preview.paused, true);
+  await h.send('cancel', true, { cancelledAction: 'pause' });
+  assert.equal(main.paused, true); assert.equal((await h.send('status')).gate, true);
+  await pendingPause; await h.send('resume'); assert.equal(main.paused, false); assert.equal(preview.paused, true);
+});
+test('cancelling learning preserves its already-paused exact player without starting it', async t => {
+  const h = harness(t); const pendingPause = h.send('pause');
+  await h.send('cancel', true, { cancelledAction: 'learn' }); assert.equal(h.video.paused, true);
+  await pendingPause; await h.send('resume'); assert.equal(h.video.paused, false);
+});
+test('cancelled pause never restores ownership after source change or manual playback', async t => {
+  for (const change of [h => { h.video.currentSrc = 'another-source'; }, h => h.video.play()]) {
+    const h = harness(t); const pendingPause = h.send('pause'); await change(h);
+    await h.send('cancel', true, { cancelledAction: 'pause' }); await pendingPause;
+    await h.send('resume'); assert.equal(h.video.paused, true);
+  }
+});
+test('cancelled pause never claims a player paused by the user', async t => {
+  const h = harness(t, { players: [mockMedia({ paused: true })] }); const pendingPause = h.send('pause');
+  await h.send('cancel', true, { cancelledAction: 'pause' }); await pendingPause; await h.send('resume'); assert.equal(h.video.paused, true);
 });
 test('same-origin iframe ownership is captured by root and child guard releases before root resumes', async t => {
   const player = mockMedia();
@@ -126,6 +151,11 @@ test('a cross-origin embedded clip is released without automatic resume', async 
   await performAction(chrome, { tabId: 99 }, 'break', { resume: true });
   const child = calls.find(call => call[0] === 'media' && call[3].frameId === 7);
   assert.equal(child[2].action, 'resume'); assert.equal(child[2].resume, false);
+});
+test('cancellation forwards the original action to media adapters', async () => {
+  const { chrome, calls } = browserMock();
+  await performAction(chrome, { tabId: 99 }, 'cancel', { cancelledAction: 'pause' });
+  assert.equal(calls.find(call => call[0] === 'media')[2].cancelledAction, 'pause');
 });
 test('navigation away blocks tab/window control', async () => { const chrome = { tabs: { get: async () => ({ url: 'https://example.com/' }) } }; assert.equal((await performAction(chrome, { tabId: 1 }, 'break')).ok, false); assert.equal((await performAction(chrome, {}, 'pause')).ok, false); });
 test('cancellation after an awaited browser read prevents focus and resume', async () => {

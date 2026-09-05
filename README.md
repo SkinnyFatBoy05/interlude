@@ -17,6 +17,8 @@ Version 0.2 adds Windows and macOS native adapters, 19 registered media platform
 - Windows: .NET Framework 4 compiler. PowerShell execution policy does not need changing.
 - macOS: Xcode Command Line Tools with Swift. Install them with `xcode-select --install` if needed.
 
+In Windows PowerShell, use `npm.cmd` and `npx.cmd` in place of `npm` and `npx` below. This avoids requiring permission to execute their PowerShell wrapper scripts.
+
 ```sh
 npm ci
 npm start

@@ -116,6 +116,14 @@ test('cancellation aborts an in-flight break and restores the gate', async t => 
   assert.equal(h.session.selection.gate, true); assert.ok(h.actions.some(item => item.action === 'cancel'));
   assert.equal(h.messages.filter(message => message.type === 'ack' && message.id === 'b1').length, 0);
 });
+test('cancelling a pending pause passes its original action and keeps the gate active', async t => {
+  const h = await background(t, { perform: (action, options) => action === 'pause' ? new Promise(resolve => options.signal.addEventListener('abort', () => resolve({ ok: false }), { once: true })) : { ok: true, mediaReady: true } });
+  h.command({ type: 'command', id: 'p1', action: 'pause' }); await flush(); h.command({ type: 'cancel', id: 'p1' }); await flush();
+  const cancellation = h.actions.find(item => item.action === 'cancel');
+  assert.equal(cancellation.options.cancelledAction, 'pause'); assert.equal(cancellation.selection.tabId, 12);
+  assert.equal(h.session.selection.gate, true);
+  assert.equal(h.actions.filter(item => item.action === 'break' || item.action === 'release').length, 0);
+});
 test('disconnect releases playback and removes the pairing token', async t => {
   const h = await background(t); h.command({ type: 'command', id: 'p1', action: 'pause' }); await flush();
   const result = await h.request({ type: 'disconnect' }); assert.equal(result.ok, true); assert.equal(h.local.token, undefined); assert.equal(h.session.selection.gate, false); assert.equal(result.state.connected, false);

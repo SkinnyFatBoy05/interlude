@@ -40,6 +40,7 @@ export async function mediaAction(chrome, tab, action, options = {}) {
           // potentially scrolled-away embedded clip.
           type: 'interlude-media', action, resume: options.resume === true && frame.frameId === 0 && allowResume,
           commandId: options.commandId, gate: options.gate === true,
+          cancelledAction: options.cancelledAction,
         }, { frameId: frame.frameId }), 1500, options.signal);
         if (!response || typeof response.ok !== 'boolean') throw new Error('The player returned no confirmation.');
         return response;

@@ -45,7 +45,7 @@ Selection is distinct from readiness. A selected social feed containing only tex
 - **Manual play while held** is paused again and relinquishes ownership of that player. Use the visible **Release playback** button or begin a new break to release the guard first.
 - **Release** removes the guard and forgets ownership without starting playback. The popup and an in-page control both expose it. Disarm/disconnect release the guard. The in-page control remains available when the local companion is offline.
 - **Learn** requires a successful pause before bringing up the local companion. **Break** restores a minimized browser and selects the configured tab while preserving a maximized window. No native-app keyboard shortcut is used by the extension, so the adapter is shared across Windows and macOS.
-- **Cancellation** aborts stale handoffs, restores the pause guard and prevents a delayed `play()` promise from starting media after cancellation or timeout. Missing responses, failed frame acknowledgments, rejected autoplay and timeouts are reported as failures with recovery guidance.
+- **Cancellation** aborts stale handoffs, restores the pause guard and prevents a delayed `play()` promise from starting media after cancellation or timeout. Cancelling a pause or learning handoff preserves any still-valid ownership already captured by its pause, so a rapid new prompt can resume that exact player on the next break. Cancellation itself never starts playback; cancelled breaks and explicit release still forget ownership. Missing responses, failed frame acknowledgments, rejected autoplay and timeouts are reported as failures with recovery guidance.
 
 ## Embedded and protected players
 

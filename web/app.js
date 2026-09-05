@@ -68,6 +68,8 @@ function render() {
   for (const key of ['autoReturn', 'maximize', 'resume', 'minimize']) $(key).checked = state[key];
   $('scope').textContent = `Project: ${state.scope}`;
   $('extension-path').textContent = state.scope.replace(/[\\/]$/, '') + (state.platform === 'win32' ? '\\' : '/') + 'extension';
+  const npm = state.platform === 'win32' ? 'npm.cmd' : 'npm';
+  $('hook-commands').replaceChildren(document.createTextNode(`${npm} run hooks:preview`), document.createElement('br'), document.createTextNode(`${npm} run hooks:install`));
   $('platform-notice').textContent = state.platform === 'darwin'
     ? 'Monitoring is limited to this project. macOS controls app activation; resizing may need Accessibility permission.'
     : state.platform === 'win32' ? 'Monitoring is limited to this project. Windows may keep your current window in front; Interlude then requests attention in the taskbar.'

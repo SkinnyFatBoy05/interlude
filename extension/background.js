@@ -70,9 +70,9 @@ async function runAction(action, options = {}) {
   lastMessage = result?.message || (result?.ok ? 'Ready.' : 'The browser action could not be completed.');
   return result;
 }
-async function cancelTarget(targetTabId, commandId) {
+async function cancelTarget(targetTabId, commandId, cancelledAction) {
   if (!targetTabId) return;
-  await runAction('cancel', { targetTabId, commandId });
+  await runAction('cancel', { targetTabId, commandId, cancelledAction });
   // If the user selected another tab while the cancelled action was pending,
   // the old player still needs cancellation, but must not retain an orphan gate.
   if (selection.tabId !== targetTabId) await runAction('release', { targetTabId });
@@ -108,7 +108,7 @@ async function connect() {
           // The abort releases the queue immediately; cancel is inserted before
           // any subsequent command and stops a late media.play() completion.
           if (pending.started && ['break', 'pause', 'learn'].includes(pending.action)) {
-            enqueue(() => cancelTarget(pending.targetTabId, message.id)).then(() => report()).catch(() => {});
+            enqueue(() => cancelTarget(pending.targetTabId, message.id, pending.action)).then(() => report()).catch(() => {});
           }
         }
         return;
@@ -141,9 +141,10 @@ async function connect() {
     };
     current.onclose = event => {
       if (socket !== current) return;
-      const interrupted = [...new Set([...active.values()].filter(pending => pending.started && ['break', 'pause', 'learn'].includes(pending.action)).map(pending => pending.targetTabId))];
+      const interrupted = [...active.values()].filter(pending => pending.started && ['break', 'pause', 'learn'].includes(pending.action))
+        .map(pending => ({ targetTabId: pending.targetTabId, action: pending.action }));
       ready = false; cancelCommands(); clearInterval(keepAlive); clearTimeout(handshake); socket = null;
-      for (const targetTabId of interrupted) enqueue(() => cancelTarget(targetTabId)).catch(() => {});
+      for (const pending of interrupted) enqueue(() => cancelTarget(pending.targetTabId, undefined, pending.action)).catch(() => {});
       lastMessage = event.code === 1008 ? 'Connection code rejected. Copy it again from the companion.' : 'Companion offline. Start Interlude to reconnect, or release playback from this extension.';
       clearTimeout(reconnect);
       if (event.code !== 1008) reconnect = setTimeout(() => connect().catch(() => {}), 4000);

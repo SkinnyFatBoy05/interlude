@@ -25,7 +25,7 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     const extensionId = new URL(worker.url()).host;
     const source = silentWave();
     await context.route('https://www.youtube.com/**', route => route.fulfill({
-      contentType: 'text/html', body: `<!doctype html><html><head><title>Interlude media fixture</title></head><body>
+      contentType: 'text/html; charset=utf-8', body: `<!doctype html><html><head><meta charset="utf-8"><title>Interlude media fixture</title></head><body>
       <h1>Local media fixture — no external site content</h1>
       <video id="hidden" src="${source}" preload="auto" style="display:none"></video>
       <video id="main" src="${source}" loop controls style="width:640px;height:360px"></video>
@@ -36,8 +36,6 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     }));
     const media = await context.newPage();
     await media.goto('https://www.youtube.com/watch?v=interlude-local-fixture');
-    await media.getByRole('button', { name: 'Play fixture', exact: true }).click();
-    await expect.poll(() => media.locator('#main').evaluate(video => video.paused)).toBe(false);
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
@@ -55,6 +53,9 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     await expect(dashboard.locator('#media-status')).toHaveText('Ready to play');
     await dashboard.getByRole('button', { name: 'Fun mode', exact: true }).click();
     await dashboard.getByRole('button', { name: 'Turn on Interlude', exact: true }).click();
+    await expect(dashboard.getByRole('button', { name: 'Turn off Interlude', exact: true })).toBeVisible();
+    await media.getByRole('button', { name: 'Play fixture', exact: true }).click();
+    await expect.poll(() => media.locator('#main').evaluate(video => video.paused)).toBe(false);
     async function event(name, turn = 'browser-1') {
       const body = sanitizeHook({ hook_event_name: name, session_id: 'browser-fixture', turn_id: turn, cwd: ROOT, tool_name: 'shell', tool_input: {} });
       const result = await request.post('http://127.0.0.1:4318/api/hook', { headers: { Authorization: `Bearer ${'b'.repeat(64)}` }, data: body });
@@ -65,6 +66,9 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     await event('Stop');
     await expect(dashboard.getByRole('heading', { name: 'Your response is ready.' })).toBeVisible();
     await expect.poll(() => media.locator('#main').evaluate(video => video.paused)).toBe(true);
+    // Wait for the actual pause acknowledgment. A new prompt before this point
+    // correctly cancels the in-flight pause and relinquishes resume ownership.
+    await expect(dashboard.locator('#notice')).toHaveText('Codex finished responding. Review its result.');
     await media.getByRole('button', { name: 'Autoplay preview', exact: true }).click();
     await expect.poll(() => media.locator('#preview').evaluate(video => video.paused)).toBe(true);
     await event('UserPromptSubmit', 'browser-2');

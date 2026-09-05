@@ -138,7 +138,12 @@
       const currentRevision = ++revision;
       if (message.action === 'pause' || message.action === 'cancel') {
         const main = primary(players);
-        if (message.action === 'cancel') owned.clear();
+        // A rapid new prompt can cancel a pause after it stopped this exact
+        // player but before verification acknowledged it. Keep that valid
+        // ownership for the next break; cancellation itself never resumes.
+        // Cancelling a break still invalidates ownership and late play promises.
+        const cancelledPause = message.action === 'cancel' && ['pause', 'learn'].includes(message.cancelledAction);
+        if (message.action === 'cancel' && !cancelledPause) owned.clear();
         if (!gate && message.action === 'pause') for (const media of players) {
           if (playing(media) && !media.muted && media.volume !== 0 && (audio(media) || media === main) && source(media)) {
             owned.set(media, { source: source(media), srcObject: media.srcObject, page: mediaPage(media) });

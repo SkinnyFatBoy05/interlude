@@ -23,7 +23,7 @@ Completed and superseded turns have bounded replay protection. Parallel permissi
 
 ## Pairing and privacy
 
-Pairing state defaults to per-user application storage, with a directory derived from the normalized project scope:
+Pairing state defaults to per-user application storage, with a directory derived from the normalized installation directory:
 
 - Windows: `%LOCALAPPDATA%/Interlude/<scope hash>`
 - macOS: `~/Library/Application Support/Interlude/<scope hash>`

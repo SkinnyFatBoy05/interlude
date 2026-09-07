@@ -6,7 +6,9 @@ This record distinguishes implementation and automated tests from tests on real 
 
 The beta adds all-local-project monitoring with independent chat state, an attention queue, acknowledgement, project-specific lessons, sanitized debug summaries, and tester onboarding. See [beta-testing.md](beta-testing.md) for installation, acceptance checks, recovery and known limitations.
 
-Implementation run: [beta workflow](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34111905919), commit b83af2e. All six OS/Node matrix jobs passed tests, native compile/protocol smoke where supported, dependency audit, and source packaging. The suite now contains 171 cases, with platform-specific permission/symlink skips. Browser/video results are recorded below once their artifact checks finish.
+Implementation run: [beta workflow](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34111905919), commit b83af2e. All six OS/Node matrix jobs passed tests, native compile/protocol smoke where supported, dependency audit, and source packaging. The suite now contains 171 cases, with platform-specific permission/symlink skips.
+
+The [recording workflow](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34112326444) passed the four Chromium integration checks and the separate multi-project recording test. The exported H.264 video is 1920 × 1200, 56.72 seconds. Pause and learning frames were visually inspected, and recorded state evidence confirms all seven chapters. That run exposed an existing macOS heartbeat test ordering assumption; the test now awaits both independent socket events before asserting closure. Consult the latest workflow for the final matrix result.
 
 Local internal-browser checks confirmed the all-project scope, debug-summary copy feedback, labelled demo, both modes, and project learning fallback. The live companion received a real event from a different local project while handoffs were disabled. This validates broader hook ingestion, not automatic foreground activation.
 

@@ -104,8 +104,10 @@ test('dashboard diagnostics are read-only and never focus the desktop', async t 
 test('heartbeat removes an unresponsive browser connection', async t => {
   const app = await appFor(t, { heartbeatMs: 60 }); const dashboard = await client(app, 'dashboard');
   const extension = await client(app, 'extension', { autoPong: false });
+  const closed = once(extension, 'close', { signal: AbortSignal.timeout(3500) });
   const disconnected = waitMessage(dashboard, m => m.state?.browser?.connected === false && /disconnected/i.test(m.state.browser.message));
-  await disconnected; assert.equal(extension.readyState, WebSocket.CLOSED);
+  // The dashboard and extension are separate sockets: their delivery order is not guaranteed.
+  await Promise.all([disconnected, closed]); assert.equal(extension.readyState, WebSocket.CLOSED);
 });
 test('selecting media after reconnection recovers a running handoff', async t => {
   const app = await appFor(t); const dashboard = await client(app, 'dashboard'); app.session.update({ enabled: true });

@@ -129,7 +129,7 @@ async function main() {
   try { existing = JSON.parse(await readFile(file, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   mergeHooks(existing, hookCommand(), action === '--remove');
   if (action === '--preview') {
-    console.log(`Interlude will merge ${HOOKS.length} event handlers into ${file}.\nOnly this project is monitored: ${ROOT}\nNo prompts, commands, transcripts or tool outputs are sent.\nCommand: ${hookCommand()}\nExisting handlers will be preserved. Hooks must be reviewed in Codex /hooks before they run.`);
+    console.log(`Interlude will merge ${HOOKS.length} event handlers into ${file}.\nAll local Codex projects are monitored while Interlude is enabled. Installed from: ${ROOT}\nNo prompts, commands, transcripts or tool outputs are sent.\nCommand: ${hookCommand()}\nExisting handlers will be preserved. Hooks must be reviewed in Codex /hooks before they run.`);
     return;
   }
   if (action === '--install') await loadConfig();

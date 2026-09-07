@@ -1,6 +1,6 @@
 # Backend reliability review
 
-The local companion accepts sanitized Codex hooks for one explicitly configured project. It tracks one active Codex session at a time. A background session cannot take control during a running turn, permission wait, question, or completion grace period. A new prompt in another session becomes eligible after the active turn finishes, is interrupted, or ends. There is no silent machine-wide monitoring.
+Interlude 0.3 accepts sanitized hooks from all local Codex projects. `src/sessions.mjs` coordinates a separate `Session` reducer for each chat, queues attention, and owns the single media handoff. An outstanding alert prevents another chat from taking the break until acknowledged or resolved. The installation directory identifies the pairing file, not a monitoring restriction.
 
 ## Action lifecycle
 

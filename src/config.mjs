@@ -42,7 +42,7 @@ export async function readConnection() {
   try { return await readConfig(); }
   catch (error) {
     // A hook may run before the companion's first launch after an update.
-    if (error.code !== 'ENOENT') throw error;
+    if (error.code !== 'ENOENT' || process.env.INTERLUDE_STATE_DIR) throw error;
     return readConfig(LOCAL);
   }
 }

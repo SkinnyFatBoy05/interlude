@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — private beta
+
+- Monitor all local Codex chats and projects with independent task state and a bounded attention queue.
+- Acknowledge alerts individually; playback resumes only when another task is working and no alert blocks it.
+- Learn mode follows the selected project's stack. Added sanitized debug export, beta onboarding and bug-report template.
+- Added a reproducible integration video using the real extension, hook emitter and generated media, with simulated Codex events and mocked native focus clearly disclosed.
+- Technical source distribution; interactive macOS and individual signed-in service checks remain required. See docs/beta-testing.md.
+
 ## 0.2.0
 
 - Registered major social, streaming-video, and music services with explicit site permissions and a shared standard-media adapter.
@@ -17,3 +25,4 @@ Interactive macOS behavior and individual signed-in streaming services require t
 ## 0.1.0
 
 - Initial local Codex/YouTube prototype with Fun mode, project lessons, passive hooks, and simulated demos.
+

@@ -10,6 +10,7 @@ export const SOURCE_ENTRIES = Object.freeze([
   'package.json', 'package-lock.json', 'playwright.config.mjs',
   'README.md', 'SECURITY.md', 'PRIVACY.md', 'CHANGELOG.md',
   'docs/platforms.md', 'docs/native-platforms.md', 'docs/backend-review.md', 'docs/release-verification.md',
+  'docs/beta-testing.md',
 ]);
 // ZIP's DOS timestamp stores local calendar components without a timezone.
 const fixedTime = new Date(2000, 0, 1, 0, 0, 0);

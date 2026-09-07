@@ -1,0 +1,33 @@
+name: Beta bug report
+description: Report a reproducible Interlude beta problem without private task data.
+title: "[Beta] "
+body:
+  - type: markdown
+    attributes:
+      value: "Never include pairing codes, prompts, private project paths, or account credentials. Review screenshots before attaching them."
+  - type: input
+    id: environment
+    attributes:
+      label: OS, browser version, and media service
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include whether multiple Codex chats or monitors were involved.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual behavior
+      description: Did media really pause? Did Codex come forward or request taskbar attention?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Debug summary
+      description: Use Connection details → Check setup → Copy debug summary.
+      render: json

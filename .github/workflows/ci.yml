@@ -58,6 +58,25 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Prepare generated demo media
+        run: |
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+          node scripts/demo-video.mjs prepare
+      - name: Record verified beta flow
+        run: npx playwright test tests/e2e/record-demo.spec.mjs
+        env:
+          INTERLUDE_RECORD_DEMO: '1'
+      - run: node scripts/demo-video.mjs compose
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: interlude-beta-video
+          path: |
+            artifacts/demo/interlude-beta-demo.mp4
+            artifacts/demo/*.jpg
+            artifacts/demo/evidence.json
+            artifacts/demo/video-info.json
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:

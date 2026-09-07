@@ -7,7 +7,7 @@ Interlude connects Codex desktop with one media tab in Chrome, Brave, or Edge. I
 - **Fun mode:** switches to your chosen media tab while Codex works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to Codex.
 - **Locked-in mode:** shows short lessons based on dependencies declared in your project's `package.json`, with evidence and questions. Observed tool events explain what changed.
 
-Version 0.2 adds Windows and macOS native adapters, 19 registered media platforms, cancellation, autoplay protection, diagnostics, and automated release checks. **This is a source distribution under validation.** A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking Codex yourself. See the [verification record](docs/release-verification.md) for measured results and remaining release gates.
+Version 0.3 is a **private technical beta** with all-project monitoring, separate chat states, an attention queue, Windows/macOS adapters, and 19 experimental media targets. Start with the [beta setup and test guide](docs/beta-testing.md). A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking Codex yourself. See the [verification record](docs/release-verification.md) for measured results and remaining release gates.
 
 ## Requirements and startup
 
@@ -51,13 +51,15 @@ npm run hooks:preview
 npm run hooks:install
 ```
 
-The installer merges seven passive handlers into `~/.codex/hooks.json`, preserves unrelated handlers, and backs up existing configuration. Each handler filters to **this repository's exact directory**. Other project events are ignored. This version monitors one project and one active session.
+The installer merges seven passive handlers into `~/.codex/hooks.json`, preserves unrelated handlers, and backs up existing configuration. Hooks report sanitized events from **all local Codex projects** to one companion. Each chat has independent state. Up to 32 sessions are retained, with completed acknowledged sessions evicted first.
 
-Open the Codex CLI here, enter `/hooks`, and review and trust the Interlude definitions. The installer never bypasses trust review. If your next desktop prompt is not detected, try a fresh task here or restart Codex after current work finishes. Existing-task reload behavior depends on the Codex version.
+Open the Codex CLI, enter `/hooks`, and review and trust the Interlude definitions. The installer never bypasses trust review. If your next desktop prompt is not detected, try a fresh local task or restart Codex after current work finishes. Existing-task reload behavior depends on the Codex version.
 
 Choose **Connection details → Check setup** to inspect native readiness without changing focus. Keep one Codex desktop window open: ambiguous targets are refused. Interlude returns to the app window; it does not select a task within that window.
 
-Once media is ready, turn on Interlude and submit a prompt in this project's Codex task. A 1.2-second start grace period avoids switching during short responses. A 1.4-second permission grace period avoids some automatically resolved requests. Completion requires a Stop hook and grace period; silence never means success.
+Once media is ready, turn on Interlude and submit a prompt in any local Codex project. A 1.2-second start grace period avoids switching during short responses. A 1.4-second permission grace period avoids some automatically resolved requests. Completion requires a Stop hook and grace period; silence never means success.
+
+When any chat needs attention, media pauses. **Acknowledge this alert** clears one alert; another working chat can then resume the break if no alerts remain. This never approves a Codex command or answers a question. Matching tool results also resolve their waits. The dashboard identifies each task by project and a shortened session ID.
 
 ## Playback and desktop behavior
 
@@ -75,7 +77,7 @@ DRM, closed players, inaccessible embeds, autoplay policy, OS focus rules, and r
 
 ## Local state and uninstall
 
-Pairing codes are private bearer credentials. Their project-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. Print **only the directory** with:
+Pairing codes are private bearer credentials. Their installation-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. Print **only the directory** with:
 
 ```sh
 node --input-type=module -e "import { stateDirectory } from './src/config.mjs'; console.log(stateDirectory());"

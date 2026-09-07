@@ -67,7 +67,7 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     await expect(dashboard.getByRole('heading', { name: 'Your response is ready.' })).toBeVisible();
     await expect.poll(() => media.locator('#main').evaluate(video => video.paused)).toBe(true);
     // Wait for the actual pause acknowledgment. A new prompt before this point
-    // correctly cancels the in-flight pause and relinquishes resume ownership.
+    // can cancel the in-flight pause; rapid cancellation is covered separately.
     await expect(dashboard.locator('#notice')).toHaveText('Codex finished responding. Review its result.');
     await media.getByRole('button', { name: 'Autoplay preview', exact: true }).click();
     await expect.poll(() => media.locator('#preview').evaluate(video => video.paused)).toBe(true);

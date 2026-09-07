@@ -19,6 +19,9 @@
         <p id="status-description">Choose a media tab, then turn on Interlude.</p>
         <button class="primary" id="toggle">Turn on Interlude</button>
         <button class="return-link text-button" id="return" hidden>Return to Codex now</button>
+        <p id="chat-status" class="muted">Beta · All local Codex projects</p>
+        <button class="secondary" id="acknowledge" hidden>Acknowledge this alert</button>
+        <ul id="chat-list" aria-label="Monitored Codex chats" hidden></ul>
       </div>
       <div class="demo-controls" id="demo-controls" hidden><span>Simulate an event</span><button data-demo="permission">Needs permission</button><button data-demo="input">Asks a question</button><button data-demo="resume">Continue working</button><button data-demo="complete">Finishes responding</button></div>
       <section id="lesson" class="lesson" hidden aria-label="Learn from your project"><div class="lesson-heading"><span id="lesson-kind">Your project</span><span id="lesson-count"></span></div><h3 id="lesson-title"></h3><p id="lesson-body"></p><p id="lesson-evidence" class="evidence"></p><div class="question"><strong id="lesson-question"></strong><button id="reveal" class="text-button">Reveal answer</button><p id="lesson-answer" hidden></p></div><div class="lesson-nav"><button id="previous" class="text-button">Previous</button><button id="next" class="text-button">Next concept</button></div></section>
@@ -34,7 +37,7 @@
         <label><input type="checkbox" id="maximize" checked><span>Maximize Codex on return</span></label>
         <label><input type="checkbox" id="resume" checked><span>Resume my video</span></label>
       </div>
-      <details class="advanced"><summary>Connection details</summary><p id="scope"></p><label><input type="checkbox" id="minimize"><span>Minimize browser after returning</span></label><p id="platform-notice">Monitoring is limited to this project. Your operating system controls whether an app can come to the front.</p><div class="diagnostic"><button class="text-button" id="check-setup">Check setup</button><p id="diagnostic-status" role="status">Check whether the desktop helper can find Codex.</p></div><button class="text-button" id="hook-setup">Set up Codex hooks</button></details>
+      <details class="advanced"><summary>Connection details</summary><p id="scope"></p><label><input type="checkbox" id="minimize"><span>Minimize browser after returning</span></label><p id="platform-notice">Monitoring covers all local Codex projects. Your operating system controls whether an app can come to the front.</p><div class="diagnostic"><button class="text-button" id="check-setup">Check setup</button><p id="diagnostic-status" role="status">Check whether the desktop helper can find Codex.</p></div><button class="text-button" id="copy-support">Copy debug summary</button><p id="support-status" role="status"></p><button class="text-button" id="hook-setup">Set up Codex hooks</button></details>
     </aside>
   </div>
   <section class="how"><h2>How it works</h2><div><span>01</span>Send a prompt</div><div><span>02</span>Enjoy the wait</div><div><span>03</span>Come back in the moment</div></section>

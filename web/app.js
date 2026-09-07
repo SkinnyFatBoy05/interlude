@@ -1,3 +1,4 @@
+import { supportSummary } from '/support.js';
 const $ = id => document.getElementById(id);
 let state;
 let token;
@@ -11,7 +12,7 @@ let connecting = false;
 let diagnosticTimer;
 let diagnosticRequestedAt = 0;
 let bridgeReady = false;
-const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'copy-code', 'next', 'previous', 'reveal'];
+const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'copy-code', 'next', 'previous', 'reveal'];
 function connectionReady(ready) {
   bridgeReady = ready;
   $('connection-dot').classList.toggle('online', ready);
@@ -59,6 +60,15 @@ function render() {
   $('demo-banner').hidden = !isDemo; $('demo-controls').hidden = !isDemo;
   $('demo-start').textContent = isDemo ? 'Restart demo' : 'Try a demo';
   $('codex-status').textContent = state.hookSeenAt ? 'Hooks detected' : 'Waiting for a prompt';
+  $('chat-status').textContent = isDemo ? 'Beta · Demo events only' : `Beta · All local Codex projects · ${state.runningCount ?? 0} working · ${state.attentionCount ?? 0} awaiting acknowledgement`;
+  $('acknowledge').hidden = isDemo || !state.attentionCount;
+  $('chat-list').hidden = isDemo || !state.sessionCount;
+  $('chat-list').replaceChildren();
+  for (const task of state.tasks ?? []) {
+    const row = document.createElement('li');
+    row.textContent = `${task.project} · ${task.id.slice(0, 8)} · ${task.status}${task.needsAttention ? ' — needs you' : ''}`;
+    $('chat-list').append(row);
+  }
   $('media-name').textContent = platformNames[state.browser.platform] || 'Media';
   $('media-status').textContent = state.browser.selected ? state.browser.mediaReady ? 'Ready to play' : 'Player not ready' : state.browser.connected ? 'Choose a tab' : 'Not connected';
   $('media-status').title = state.browser.title || state.browser.message;
@@ -66,14 +76,14 @@ function render() {
   $('media-message').hidden = !state.browser.connected || state.browser.mediaReady || !state.browser.message;
   $('connect-browser').textContent = state.browser.connected ? 'Browser setup' : 'Connect browser';
   for (const key of ['autoReturn', 'maximize', 'resume', 'minimize']) $(key).checked = state[key];
-  $('scope').textContent = `Project: ${state.scope}`;
+  $('scope').textContent = `Watching all local Codex projects. Current project: ${state.activeProject ?? state.scope}. Returns open the Codex window, not an individual chat.`;
   $('extension-path').textContent = state.scope.replace(/[\\/]$/, '') + (state.platform === 'win32' ? '\\' : '/') + 'extension';
   const npm = state.platform === 'win32' ? 'npm.cmd' : 'npm';
   $('hook-commands').replaceChildren(document.createTextNode(`${npm} run hooks:preview`), document.createElement('br'), document.createTextNode(`${npm} run hooks:install`));
   $('platform-notice').textContent = state.platform === 'darwin'
-    ? 'Monitoring is limited to this project. macOS controls app activation; resizing may need Accessibility permission.'
-    : state.platform === 'win32' ? 'Monitoring is limited to this project. Windows may keep your current window in front; Interlude then requests attention in the taskbar.'
-      : 'Monitoring is limited to this project. Automatic desktop return is available on Windows and macOS.';
+    ? 'macOS controls app activation; resizing may need Accessibility permission.'
+    : state.platform === 'win32' ? 'Windows may keep your current window in front; Interlude then requests attention in the taskbar.'
+      : 'Automatic desktop return is available on Windows and macOS.';
   if (state.diagnostics?.checkedAt && state.diagnostics.checkedAt >= diagnosticRequestedAt) {
     clearTimeout(diagnosticTimer);
     $('check-setup').disabled = !bridgeReady;
@@ -168,6 +178,12 @@ $('demo-start').addEventListener('click', () => send({ type: 'demo', action: 'st
 $('demo-close').addEventListener('click', () => send({ type: 'demo', action: 'close' }));
 for (const button of document.querySelectorAll('[data-demo]')) button.addEventListener('click', () => send({ type: 'demo', action: button.dataset.demo }));
 $('return').addEventListener('click', () => send({ type: 'return' }));
+$('acknowledge').addEventListener('click', () => send({ type: 'acknowledge' }));
+$('copy-support').addEventListener('click', async () => {
+  if (!state) return;
+  try { await navigator.clipboard.writeText(JSON.stringify(supportSummary(state), null, 2)); $('support-status').textContent = 'Copied. No pairing code, project paths, tab titles, prompts, or chat IDs are included.'; }
+  catch { $('support-status').textContent = 'Clipboard access was denied. Try opening Interlude in your browser.'; }
+});
 $('reveal').addEventListener('click', () => { revealed = !revealed; render(); });
 $('next').addEventListener('click', () => { if (state.lessons.length) concept = (concept + 1) % state.lessons.length; render(); });
 $('previous').addEventListener('click', () => { if (state.lessons.length) concept = (concept + state.lessons.length - 1) % state.lessons.length; render(); });

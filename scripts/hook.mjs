@@ -1,5 +1,4 @@
-import { fileURLToPath } from 'node:url';
-import { sanitizeHook, scopeKey } from '../src/events.mjs';
+import { sanitizeHook } from '../src/events.mjs';
 import { readConnection } from '../src/config.mjs';
 
 // No hook output may influence Codex decisions. Even unavailable companions are a successful no-op.
@@ -11,8 +10,7 @@ try {
     chunks.push(chunk);
   }
   const event = sanitizeHook(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-  const root = fileURLToPath(new URL('../', import.meta.url));
-  if (event && scopeKey(event.cwd) === scopeKey(root)) {
+  if (event) {
     const config = await readConnection();
     await fetch('http://127.0.0.1:4318/api/hook', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },

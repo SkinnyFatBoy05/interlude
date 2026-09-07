@@ -6,6 +6,7 @@ import path from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { ROOT, LOCAL, PORT, loadConfig, stateDirectory } from './config.mjs';
 import { Session } from './session.mjs';
+import { Sessions } from './sessions.mjs';
 import { validEvent } from './events.mjs';
 import { projectLessons, activityLesson } from './lessons.mjs';
 import * as nativePlatform from './platform.mjs';
@@ -32,7 +33,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   const secret = config.token;
   if (typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid local pairing token.');
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid local port.');
-  const session = new Session({ cwd });
+  const session = new Sessions({ cwd });
   if (config.migrationWarning) session.note(config.migrationWarning);
   const sockets = new Set();
   const awaiting = new Map();
@@ -43,6 +44,16 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   let diagnosticsTask = null;
   let diagnosticsController = null;
   let lessons = await projectLessons(cwd);
+  let lessonScope = cwd;
+  let lessonRequest = 0;
+  function refreshLessons(force = false) {
+    const target = session.activeCwd;
+    if (!force && target === lessonScope) return;
+    lessonScope = target;
+    lessons = [];
+    const request = ++lessonRequest;
+    projectLessons(target).then(result => { if (!closing && request === lessonRequest) { lessons = result; publish(); } });
+  }
   const { version } = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
   let activeEffect = Promise.resolve();
   let actionController = new AbortController();
@@ -55,7 +66,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   const origin = () => `http://127.0.0.1:${actualPort}`;
   const send = (ws, value) => { if (ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(value)); } catch { ws.terminate(); } } };
   const snapshot = () => ({ ...session.state, browser, lessons: lessons.length ? lessons : [activityLesson], scope: cwd, platform: process.platform, version, diagnostics, demo: demo?.state ?? null });
-  const publish = () => { for (const ws of sockets) if (ws.role === 'dashboard') send(ws, { type: 'state', state: snapshot() }); };
+  const publish = () => { refreshLessons(); for (const ws of sockets) if (ws.role === 'dashboard') send(ws, { type: 'state', state: snapshot() }); };
 
   function syncActions() {
     if (observedEpoch !== session.epoch) {
@@ -152,6 +163,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         const [name, type] = files.get(pathname);
         return reply(200, await readFile(path.join(WEB, name), 'utf8'), type);
       }
+      if (req.method === 'GET' && pathname === '/support.js') return reply(200, await readFile(path.join(ROOT, 'src', 'support.mjs'), 'utf8'), 'text/javascript');
       const requestOrigin = req.headers.origin;
       if (requestOrigin && requestOrigin !== origin()) return reply(403, { error: 'Invalid origin.' });
       if (req.method === 'GET' && pathname === '/api/bootstrap') {
@@ -164,7 +176,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         const event = await bodyJson(req);
         if (!validEvent(event)) return reply(400, { error: 'Invalid event.' });
         dispatch(session.receive(event));
-        if (event.event === 'PostToolUse' && event.files.includes('package.json')) lessons = await projectLessons(cwd);
+        if (event.event === 'PostToolUse' && event.files.includes('package.json') && event.cwd === session.activeCwd) refreshLessons(true);
         publish();
         return reply(200, { ok: true });
       }
@@ -227,6 +239,9 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
           dispatch(session.update(message.patch));
           if (session.state.enabled && demo) { demo = null; clearInterval(demoTimer); }
           publish();
+        }
+        else if (message.type === 'acknowledge') {
+          dispatch(session.acknowledge()); publish();
         }
         else if (message.type === 'return') {
           session.manualReturn(); syncActions();
@@ -318,7 +333,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   try {
     await mkdir(LOCAL, { recursive: true });
     const app = await createCompanion();
-    console.log(`Interlude is ready at ${app.origin}\nMonitoring this project only. Open the page to enable it.`);
+    console.log(`Interlude beta is ready at ${app.origin}\nAll local Codex projects can report events. Open the page to enable handoffs.`);
     for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => { await app.close(); process.exit(0); });
   } catch (error) { console.error(error.code === 'EADDRINUSE' ? `Port ${PORT} is already in use. Check whether Interlude is already running.` : error.message); process.exitCode = 1; }
 }

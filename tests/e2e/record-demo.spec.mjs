@@ -1,5 +1,5 @@
 import { test, expect, chromium } from '@playwright/test';
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, copyFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { ROOT } from '../../src/config.mjs';
@@ -103,6 +103,8 @@ test('record the real beta extension across two projects', async () => {
     await expect(media.getByRole('button', { name: 'Release playback', exact: true })).toHaveCount(0);
     await writeFile(path.join(output, 'evidence.json'), JSON.stringify({ disclosure: 'Real app, extension and hook emitter. Synthetic Codex events and generated media; native focus mocked.', chapters: evidence }, null, 2));
   } finally { await context.close(); }
-  await dashboardVideo.saveAs(path.join(output, 'dashboard.webm'));
-  await mediaVideo.saveAs(path.join(output, 'media.webm'));
+  // A persistent context closes its browser transport. Copy completed local
+  // recordings directly instead of invoking saveAs through that closed transport.
+  await copyFile(await dashboardVideo.path(), path.join(output, 'dashboard.webm'));
+  await copyFile(await mediaVideo.path(), path.join(output, 'media.webm'));
 });

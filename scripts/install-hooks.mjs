@@ -129,7 +129,7 @@ async function main() {
   try { existing = JSON.parse(await readFile(file, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   mergeHooks(existing, hookCommand(), action === '--remove');
   if (action === '--preview') {
-    console.log(`Interlude will merge ${HOOKS.length} event handlers into ${file}.\nAll local Codex projects are monitored while Interlude is enabled. Installed from: ${ROOT}\nNo prompts, commands, transcripts or tool outputs are sent.\nCommand: ${hookCommand()}\nExisting handlers will be preserved. Hooks must be reviewed in Codex /hooks before they run.`);
+    console.log(`Interlude will merge ${HOOKS.length} event handlers into ${file}.\nAll local Codex projects report sanitized events while the companion runs; enabling Interlude permits handoffs. Installed from: ${ROOT}\nNo prompts, commands, transcripts or tool outputs are sent.\nCommand: ${hookCommand()}\nExisting handlers will be preserved. Hooks must be reviewed in Codex /hooks before they run.`);
     return;
   }
   if (action === '--install') await loadConfig();
@@ -137,3 +137,4 @@ async function main() {
   console.log(action === '--install' ? 'Interlude hooks installed. Review and trust them in Codex /hooks, then restart the desktop app or start a fresh task.' : 'Interlude hooks removed. Other hooks were preserved.');
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main().catch(error => { console.error(error.message); process.exitCode = 1; });
+

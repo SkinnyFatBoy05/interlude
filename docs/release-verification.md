@@ -2,6 +2,17 @@
 
 This record distinguishes implementation and automated tests from tests on real accounts and desktops. A registered host is a compatibility target, not a certification that every player on that service is supported.
 
+## 0.3.0 private beta — 2026-09-07
+
+The beta adds all-local-project monitoring with independent chat state, an attention queue, acknowledgement, project-specific lessons, sanitized debug summaries, and tester onboarding. See [beta-testing.md](beta-testing.md) for installation, acceptance checks, recovery and known limitations.
+
+Implementation run: [beta workflow](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34111905919), commit b83af2e. All six OS/Node matrix jobs passed tests, native compile/protocol smoke where supported, dependency audit, and source packaging. The suite now contains 171 cases, with platform-specific permission/symlink skips. Browser/video results are recorded below once their artifact checks finish.
+
+Local internal-browser checks confirmed the all-project scope, debug-summary copy feedback, labelled demo, both modes, and project learning fallback. The live companion received a real event from a different local project while handoffs were disabled. This validates broader hook ingestion, not automatic foreground activation.
+
+The reproducible video uses the real dashboard, extension, hook-emitter process, local transport and HTML media. Two synthetic Codex sessions use separate temporary projects. The recording asserts completion pause, acknowledgement resume, React lessons, permission pause, continued-work resume, final pause and release. Native focus is mocked and the media clip is generated; this does not certify a live YouTube/Netflix or full native desktop loop.
+
+## Historical 0.2 verification
 **Verified 2026-09-05:** [all seven GitHub Actions jobs passed](https://github.com/SkinnyFatBoy05/interlude/actions/runs/33955420075) for implementation commit `93e05b9`. The matrix uses Node 22 and 24 on Windows x64, macOS ARM64, and Linux x64. Subsequent documentation-only commits retain that implementation; consult the repository's latest workflow for their verification status.
 
 | Area | Verification required | Current evidence |
@@ -21,3 +32,4 @@ Before declaring a production release, validate an actual Codex desktop prompt, 
 Source publication and green CI are necessary engineering checks. They do not replace interactive OS or paid-service validation, signed installer distribution, or browser-store review.
 
 The source is published privately at [SkinnyFatBoy05/interlude](https://github.com/SkinnyFatBoy05/interlude). The local companion was restarted successfully; the existing pairing code migrated into per-user app data and its old project file was removed. Monitoring is disabled until the user connects the updated extension and turns it on. Existing unpacked installations must reload the extension and their selected media tab after updating.
+

@@ -1,27 +1,26 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#163b30"><title>Interlude — Make room for the wait</title><link rel="stylesheet" href="/style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050505"><title>Interlude — Make room for the wait</title><link rel="stylesheet" href="/style.css"></head>
 <body>
-<header class="topbar"><a href="/" class="brand" aria-label="Interlude home"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M19 15v18m10-18v18"/></svg>interlude</a><span class="local"><i id="connection-dot"></i>Local companion</span></header>
+<header class="topbar"><div class="brand-lockup"><a href="/" class="brand" aria-label="Interlude home"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M19 15v18m10-18v18"/></svg>interlude</a><span class="brand-motto">A little downtime. A seamless return.</span></div><span class="local"><i id="connection-dot"></i>Local companion</span></header>
 <main>
-  <section class="intro"><div><h1>Make room for the wait.</h1><p>A little downtime. A seamless return.</p></div><button id="demo-start" class="text-button">Try a demo</button></section>
   <aside id="demo-banner" class="demo-banner" hidden><div><strong>Demo</strong><span>Simulated Codex events. Your apps stay unchanged.</span></div><button id="demo-close" class="text-button">Exit demo</button></aside>
   <div class="workspace">
     <section class="main-panel" aria-label="Interlude mode and task">
+      <section class="intro"><div><h1>Make room for the wait.</h1><p class="mode-description" id="mode-description">Your video picks up while Codex works. We bring you back when it needs you.</p></div><button id="demo-start" class="text-button">Try a demo</button></section>
       <div class="modes" role="group" aria-label="Choose your mode">
         <button id="fun-mode" class="mode selected" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></svg>Fun mode</button>
         <button id="learn-mode" class="mode" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>Locked-in mode</button>
       </div>
-      <p class="mode-description" id="mode-description">Your video picks up while Codex works. We bring you back when it needs you.</p>
       <div class="status-panel" id="status-panel">
-        <div class="status-label"><i class="pulse" id="status-dot"></i><span id="status-label">Ready when you are</span><span id="elapsed" class="elapsed"></span></div>
-        <h2 id="status-title">Your next prompt starts the loop.</h2>
-        <p id="status-description">Choose a media tab, then turn on Interlude.</p>
-        <button class="primary" id="toggle">Turn on Interlude</button>
-        <button class="return-link text-button" id="return" hidden>Return to Codex now</button>
-        <p id="chat-status" class="muted">Beta · All local Codex projects</p>
-        <button class="secondary" id="acknowledge" hidden>Acknowledge this alert</button>
-        <ul id="chat-list" aria-label="Monitored Codex chats" hidden></ul>
+        <div class="status-copy">
+          <div class="status-label"><i class="pulse" id="status-dot"></i><span id="status-label">Ready when you are</span><span id="elapsed" class="elapsed"></span></div>
+          <h2 id="status-title">Your next prompt starts the loop.</h2>
+          <p id="status-description">Choose a media tab, then turn on Interlude.</p>
+          <div class="status-actions"><button class="primary" id="toggle">Turn on Interlude</button><button class="secondary return-link" id="return" hidden>Return to Codex now</button></div>
+          <button class="secondary acknowledge" id="acknowledge" hidden>Acknowledge this alert</button>
+        </div>
+        <aside class="task-rail" id="task-rail" hidden><span class="task-rail-heading">Current tasks</span><p id="chat-status" class="muted">Beta · All local Codex projects</p><ul id="chat-list" aria-label="Monitored Codex chats" hidden></ul></aside>
       </div>
       <div class="demo-controls" id="demo-controls" hidden><span>Simulate an event</span><button data-demo="permission">Needs permission</button><button data-demo="input">Asks a question</button><button data-demo="resume">Continue working</button><button data-demo="complete">Finishes responding</button></div>
       <section id="lesson" class="lesson" hidden aria-label="Learn from your project"><div class="lesson-heading"><span id="lesson-kind">Your project</span><span id="lesson-count"></span></div><h3 id="lesson-title"></h3><p id="lesson-body"></p><p id="lesson-evidence" class="evidence"></p><div class="question"><strong id="lesson-question"></strong><button id="reveal" class="text-button">Reveal answer</button><p id="lesson-answer" hidden></p></div><div class="lesson-nav"><button id="previous" class="text-button">Previous</button><button id="next" class="text-button">Next concept</button></div></section>
@@ -40,8 +39,7 @@
       <details class="advanced"><summary>Connection details</summary><p id="scope"></p><label><input type="checkbox" id="minimize"><span>Minimize browser after returning</span></label><p id="platform-notice">Monitoring covers all local Codex projects. Your operating system controls whether an app can come to the front.</p><div class="diagnostic"><button class="text-button" id="check-setup">Check setup</button><p id="diagnostic-status" role="status">Check whether the desktop helper can find Codex.</p></div><button class="text-button" id="copy-support">Copy debug summary</button><p id="support-status" role="status"></p><button class="text-button" id="hook-setup">Set up Codex hooks</button></details>
     </aside>
   </div>
-  <section class="how"><h2>How it works</h2><div><span>01</span>Send a prompt</div><div><span>02</span>Enjoy the wait</div><div><span>03</span>Come back in the moment</div></section>
-  <section id="activity-section" class="activity" hidden><h2>What happened</h2><p class="muted">Observed tool activity. A finished command or edit still needs its result checked.</p><ol id="activity"></ol></section>
+  <section id="activity-section" class="activity" hidden><div class="activity-heading"><h2>Activity timeline</h2><p class="muted">What’s happening while you wait.</p></div><ol id="activity"></ol></section>
   <p id="notice" class="notice" role="status" hidden></p>
 </main>
 <dialog id="setup-dialog"><form method="dialog"><button class="close" aria-label="Close setup">×</button></form><h2>A small connection.<br>A better handoff.</h2><p>Keep the companion running, then connect your browser once.</p><ol class="setup-steps"><li>Open your Brave, Chrome, or Edge extension manager, turn on Developer mode, then choose <strong>Load unpacked</strong>.</li><li>Select the <strong>extension</strong> folder in this project.<code id="extension-path"></code></li><li>Copy the code below. In your browser toolbar, open <strong>Extensions → Interlude</strong>, paste it, and click <strong>Connect</strong>.</li><li>In that popup, choose your media tab and grant access to its site. Reload an existing media tab once after installing or updating the extension.</li></ol><button id="copy-code" class="primary">Copy connection code</button><p id="copy-status" role="status" hidden></p><p class="muted">This code pairs your browser with this local companion. Keep it private.</p><hr><h3>Connect Codex</h3><p>Run these commands from the project folder:</p><code class="commands" id="hook-commands">npm run hooks:preview<br>npm run hooks:install</code><p>Open the Codex CLI in this project, type <strong>/hooks</strong>, and review and trust the Interlude hooks. If your next desktop prompt is not detected, try a fresh task in this project or restart Codex after current work finishes.</p><p class="muted">The hooks never approve commands. They only report task events locally. Existing hooks are preserved.</p></dialog>

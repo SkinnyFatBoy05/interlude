@@ -52,6 +52,8 @@ function render() {
   if (learning && view.status === 'running') { text[1] = 'Build your understanding.'; text[2] = 'Explore a concept from your project while Codex keeps working.'; }
   if (view.status === 'idle' && state.enabled) { text[0] = 'Interlude is on'; text[2] = 'Send your next prompt in Codex. The handoff begins after a short pause.'; }
   $('status-label').textContent = text[0]; $('status-title').textContent = text[1]; $('status-description').textContent = text[2];
+  $('status-panel').dataset.state = view.status;
+  document.body.dataset.mode = learning ? 'learn' : 'fun';
   $('status-dot').classList.toggle('running', view.status === 'running');
   $('status-panel').classList.toggle('attention', ['permission', 'input', 'complete'].includes(view.status));
   $('toggle').textContent = state.enabled ? 'Turn off Interlude' : 'Turn on Interlude';
@@ -62,6 +64,7 @@ function render() {
   $('codex-status').textContent = state.hookSeenAt ? 'Hooks detected' : 'Waiting for a prompt';
   $('chat-status').textContent = isDemo ? 'Beta · Demo events only' : `Beta · All local Codex projects · ${state.runningCount ?? 0} working · ${state.attentionCount ?? 0} awaiting acknowledgement`;
   $('acknowledge').hidden = isDemo || !state.attentionCount;
+  $('task-rail').hidden = isDemo || !state.sessionCount;
   $('chat-list').hidden = isDemo || !state.sessionCount;
   $('chat-list').replaceChildren();
   for (const task of state.tasks ?? []) {

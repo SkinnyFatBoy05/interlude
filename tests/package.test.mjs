@@ -1,11 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { collectReleaseFiles } from '../scripts/package-release.mjs';
+import { INTERLUDE_EXTENSION_ID } from '../src/server.mjs';
+
+test('the manifest key pins the extension identity trusted by the companion', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
+  const digest = createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest().subarray(0, 16);
+  const extensionId = [...digest].map(byte => String.fromCharCode(97 + (byte >> 4), 97 + (byte & 15))).join('');
+  assert.equal(extensionId, INTERLUDE_EXTENSION_ID);
+});
 
 test('archive bytes are stable across timezones', async () => {
   const moduleUrl = new URL('../scripts/package-release.mjs', import.meta.url).href;

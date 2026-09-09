@@ -8,7 +8,7 @@ let handshake;
 let connecting = false;
 let ready = false;
 let selection = {};
-let lastMessage = 'Open the local companion and copy its connection code.';
+let lastMessage = 'Start the local companion. Interlude will connect automatically.';
 let actionQueue = Promise.resolve();
 let reportSequence = 0;
 let registration = Promise.resolve();
@@ -77,6 +77,15 @@ async function cancelTarget(targetTabId, commandId, cancelledAction) {
   // the old player still needs cancellation, but must not retain an orphan gate.
   if (selection.tabId !== targetTabId) await runAction('release', { targetTabId });
 }
+async function storedPairing() {
+  const stored = await chrome.storage.local.get(['token', 'autoPair']);
+  if (stored.autoPair === false) {
+    lastMessage = 'Disconnected. Choose Connect companion when you want to reconnect.';
+    return { allowed: false, token: null };
+  }
+  const token = typeof stored.token === 'string' && /^[a-f0-9]{64}$/.test(stored.token) ? stored.token : null;
+  return { allowed: true, token };
+}
 function cancelCommands() {
   for (const pending of active.values()) pending.controller.abort();
   active.clear();
@@ -86,21 +95,32 @@ async function connect() {
   if (connecting || socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
   connecting = true;
   try {
-    const { token } = await chrome.storage.local.get('token');
-    if (!token) return;
+    const pairing = await storedPairing();
+    if (!pairing.allowed) return;
+    let token = pairing.token;
     const current = new WebSocket('ws://127.0.0.1:4318/bridge');
     socket = current;
     handshake = setTimeout(() => { if (socket === current && !ready) current.close(); }, 8000);
     current.onopen = () => {
       if (socket !== current) return;
-      send({ type: 'hello', role: 'extension', token });
-      clearInterval(keepAlive);
-      keepAlive = setInterval(() => { send({ type: 'ping' }); report().catch(() => {}); }, 20000);
+      send(token ? { type: 'hello', role: 'extension', token } : { type: 'pair', role: 'extension' });
     };
-    current.onmessage = event => {
+    current.onmessage = async event => {
       if (socket !== current) return;
       let message; try { message = JSON.parse(event.data); } catch { return; }
-      if (message.type === 'ready') { clearTimeout(handshake); ready = true; lastMessage = 'Connected to the local companion.'; report().catch(() => {}); return; }
+      if (message.type === 'paired') {
+        if (token || typeof message.token !== 'string' || !/^[a-f0-9]{64}$/.test(message.token)) { current.close(1008, 'Invalid pairing response'); return; }
+        token = message.token;
+        await chrome.storage.local.set({ token, autoPair: true });
+        if (socket === current && current.readyState === WebSocket.OPEN) send({ type: 'hello', role: 'extension', token });
+        return;
+      }
+      if (message.type === 'ready') {
+        clearTimeout(handshake); ready = true; lastMessage = 'Connected to the local companion.';
+        clearInterval(keepAlive);
+        keepAlive = setInterval(() => { send({ type: 'ping' }); report().catch(() => {}); }, 20000);
+        report().catch(() => {}); return;
+      }
       if (message.type === 'cancel' && ready && typeof message.id === 'string') {
         const pending = active.get(message.id);
         if (pending) {
@@ -145,14 +165,16 @@ async function connect() {
         .map(pending => ({ targetTabId: pending.targetTabId, action: pending.action }));
       ready = false; cancelCommands(); clearInterval(keepAlive); clearTimeout(handshake); socket = null;
       for (const pending of interrupted) enqueue(() => cancelTarget(pending.targetTabId, undefined, pending.action)).catch(() => {});
-      lastMessage = event.code === 1008 ? 'Connection code rejected. Copy it again from the companion.' : 'Companion offline. Start Interlude to reconnect, or release playback from this extension.';
+      if (event.code === 1008) chrome.storage.local.remove('token').catch(() => {});
+      lastMessage = event.code === 1008 ? 'Pairing expired. Reconnecting automatically…' : 'Companion offline. Start Interlude to reconnect, or release playback from this extension.';
       clearTimeout(reconnect);
-      if (event.code !== 1008) reconnect = setTimeout(() => connect().catch(() => {}), 4000);
+      reconnect = setTimeout(() => connect().catch(() => {}), event.code === 1008 ? 500 : 4000);
     };
     current.onerror = () => {};
   } finally { connecting = false; }
 }
 async function popupState() {
+  if (!ready) await connect();
   const state = await report();
   const tabs = await Promise.all((await chrome.tabs.query({})).filter(tab => platformFor(tab.url)).map(async tab => {
     const frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id }).catch(() => []);
@@ -184,9 +206,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }
   enqueue(async () => {
     await initialized;
-    if (message.type === 'pair') {
-      if (typeof message.token !== 'string' || !/^[a-f0-9]{64}$/.test(message.token)) throw new Error('Paste the complete connection code from Interlude.');
-      await chrome.storage.local.set({ token: message.token });
+    if (message.type === 'connect') {
+      await chrome.storage.local.set({ autoPair: true });
+      await chrome.storage.local.remove('token');
       ready = false; cancelCommands(); clearTimeout(reconnect); clearTimeout(handshake); clearInterval(keepAlive);
       const previous = socket; socket = null; previous?.close(); await connect();
     } else if (message.type === 'select') {
@@ -209,9 +231,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     } else if (message.type === 'disconnect') {
       if (selection.tabId) await runAction('release');
       await chrome.storage.local.remove('token');
+      await chrome.storage.local.set({ autoPair: false });
       ready = false; cancelCommands(); clearTimeout(reconnect); clearTimeout(handshake); clearInterval(keepAlive);
       const previous = socket; socket = null; previous?.close();
-      lastMessage = 'Disconnected. Copy a connection code to pair again.';
+      lastMessage = 'Disconnected. Choose Connect companion when you want to reconnect.';
     } else if (message.type !== 'status') throw new Error('Unknown extension action.');
   }).then(popupState).then(respond).catch(error => respond({ ok: false, message: error.message || 'The extension could not complete this action.' }));
   return true;

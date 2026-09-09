@@ -8,6 +8,7 @@ import { ROOT } from '../src/config.mjs';
 import { sanitizeHook } from '../src/events.mjs';
 
 const token = 'a'.repeat(64);
+const trustedExtensionOrigin = 'chrome-extension://ppfnbagemmijocfmjepgkfljddnkcghn';
 async function appFor(t, options = {}) { const app = await createCompanion({ port: 0, token, nativeFocus: async () => ({ focused: true }), ...options }); t.after(() => app.close()); return app; }
 function waitMessage(ws, predicate) {
   return new Promise((resolve, reject) => {
@@ -17,7 +18,7 @@ function waitMessage(ws, predicate) {
   });
 }
 async function client(app, role, options = {}) {
-  const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: role === 'dashboard' ? app.origin : 'chrome-extension://' + 'a'.repeat(32), ...options });
+  const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: role === 'dashboard' ? app.origin : trustedExtensionOrigin, ...options });
   await once(ws, 'open'); const ready = waitMessage(ws, m => m.type === 'ready'); ws.send(JSON.stringify({ type: 'hello', role, token })); await ready; return ws;
 }
 async function post(app, event, auth = token, headers = {}) {
@@ -27,11 +28,29 @@ function event(name, fields = {}) { return sanitizeHook({ hook_event_name: name,
 
 test('token comparisons safely reject different byte lengths', () => { assert.equal(sameToken('é'.repeat(64), token), false); assert.equal(sameToken(undefined, token), false); assert.equal(sameToken(token, token), true); });
 test('bootstrap requires a local same-origin custom request', async t => { const app = await appFor(t); assert.equal((await fetch(app.origin + '/api/bootstrap')).status, 403); assert.equal((await fetch(app.origin + '/api/bootstrap', { headers: { 'X-Interlude-Client': 'dashboard', Origin: 'https://evil.test' } })).status, 403); const response = await fetch(app.origin + '/api/bootstrap', { headers: { 'X-Interlude-Client': 'dashboard' } }); assert.equal(response.status, 200); assert.equal((await response.json()).token, token); });
+test('the pinned Interlude extension can pair automatically over its origin-checked bridge', async t => {
+  const app = await appFor(t);
+  const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: trustedExtensionOrigin });
+  await once(ws, 'open');
+  const paired = waitMessage(ws, message => message.type === 'paired');
+  ws.send(JSON.stringify({ type: 'pair', role: 'extension' }));
+  assert.equal((await paired).token, token);
+  ws.close();
+});
 test('hook receiver requires authentication and valid events', async t => { const app = await appFor(t); assert.equal((await post(app, event('UserPromptSubmit'), 'wrong')).status, 401); assert.equal((await post(app, { bad: 'event' })).status, 400); assert.equal((await post(app, event('UserPromptSubmit'))).status, 200); assert.equal(app.session.state.status, 'running'); });
 test('cross-origin hook submissions are denied even with a token', async t => { const app = await appFor(t); assert.equal((await post(app, event('UserPromptSubmit'), token, { Origin: 'https://evil.test' })).status, 403); });
 test('oversized request is rejected', async t => { const app = await appFor(t); assert.equal((await post(app, { text: 'x'.repeat(20000) })).status, 413); });
 test('request size is bounded in UTF-8 bytes', async t => { const app = await appFor(t); assert.equal((await post(app, { text: 'é'.repeat(9000) })).status, 413); });
 test('unpaired WebSockets cannot read task state', async t => { const app = await appFor(t); const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: app.origin }); await once(ws, 'open'); const closed = once(ws, 'close'); ws.send(JSON.stringify({ type: 'hello', role: 'dashboard', token: 'wrong' })); assert.equal((await closed)[0], 1008); });
+test('a foreign extension origin cannot open the local bridge even with the token', async t => {
+  const app = await appFor(t);
+  await new Promise((resolve, reject) => {
+    const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: 'chrome-extension://' + 'a'.repeat(32) });
+    ws.on('open', () => reject(new Error('Foreign extension reached the bridge.')));
+    ws.on('unexpected-response', (_request, response) => { assert.equal(response.statusCode, 403); response.resume(); resolve(); });
+    ws.on('error', () => {});
+  });
+});
 test('extension clients cannot change settings', async t => { const app = await appFor(t); const extension = await client(app, 'extension'); extension.send(JSON.stringify({ type: 'settings', patch: { enabled: true } })); await delay(30); assert.equal(app.session.state.enabled, false); });
 test('demo events never dispatch desktop actions', async t => { let focus = 0; const app = await appFor(t, { nativeFocus: async () => { focus++; return { focused: true }; } }); const dashboard = await client(app, 'dashboard'); const started = waitMessage(dashboard, m => m.state?.demo?.status === 'running'); dashboard.send(JSON.stringify({ type: 'demo', action: 'start' })); await started; const finished = waitMessage(dashboard, m => m.state?.demo?.status === 'complete'); dashboard.send(JSON.stringify({ type: 'demo', action: 'complete' })); await finished; assert.equal(focus, 0); assert.equal(app.session.state.status, 'idle'); });
 test('return waits for video pause acknowledgement before native focus', async t => {
@@ -126,7 +145,7 @@ test('disarming pauses then releases the browser playback guard', async t => {
   extension.send(JSON.stringify({ type: 'ack', id: release.id, ok: true }));
 });
 test('extension origins cannot impersonate the dashboard even with its token', async t => {
-  const app = await appFor(t); const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: 'chrome-extension://' + 'b'.repeat(32) });
+  const app = await appFor(t); const ws = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: trustedExtensionOrigin });
   await once(ws, 'open'); const closed = once(ws, 'close'); ws.send(JSON.stringify({ type: 'hello', role: 'dashboard', token }));
   assert.equal((await closed)[0], 1008);
 });

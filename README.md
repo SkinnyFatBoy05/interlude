@@ -34,9 +34,8 @@ Start with **Try a demo** to explore both modes, permission and question states,
 
 1. Open `chrome://extensions`, `brave://extensions`, or `edge://extensions`.
 2. Enable Developer mode, choose **Load unpacked**, and select this repository's `extension` folder.
-3. In the dashboard, choose **Connect browser → Copy connection code**.
-4. Open **Extensions → Interlude** from the browser toolbar. Paste the code and click **Connect**.
-5. Open media, choose its tab in the popup, and click **Use this tab**. Grant access when prompted. Check that the dashboard reports ready media.
+3. Keep the companion running, then open **Extensions → Interlude** from the browser toolbar. The extension pairs automatically; no code or account is required.
+4. Open media, choose its tab in the popup, and click **Use this tab**. Grant access when prompted. Check that the dashboard reports ready media.
 
 After an extension update, reload it in the extension manager, reload your media tab, and select the tab again. Selection is session-only. **Release playback** in the page or popup clears an autoplay hold without starting media.
 
@@ -59,7 +58,7 @@ Choose **Connection details → Check setup** to inspect native readiness withou
 
 Once media is ready, turn on Interlude and submit a prompt in any local Codex project. A 1.2-second start grace period avoids switching during short responses. A 1.4-second permission grace period avoids some automatically resolved requests. Completion requires a Stop hook and grace period; silence never means success.
 
-When any chat needs attention, media pauses. **Acknowledge this alert** clears one alert; another working chat can then resume the break if no alerts remain. This never approves a Codex command or answers a question. Matching tool results also resolve their waits. The dashboard identifies each task by project and a shortened session ID.
+When any chat needs attention, media pauses. **Acknowledge this alert** clears one alert; another working chat can then resume the break if no alerts remain. This never approves a Codex command or answers a question. Matching tool starts or results also resolve their waits. The dashboard identifies each task by project and a shortened session ID.
 
 ## Playback and desktop behavior
 
@@ -70,22 +69,22 @@ When any chat needs attention, media pauses. **Acknowledge this alert** clears o
 - Only a player Interlude actually paused can resume automatically. Manually paused media, muted previews, changed sources, replacement players, and new pages do not resume automatically. Cross-origin embedded players require manual resume.
 - A pause hold prevents feed autoplay until the next break or explicit release. **Return to Codex now** holds automatic handoffs for the rest of the turn. Disarming releases the guard without starting playback.
 - New turns, settings changes, manual return, and disarming cancel old actions. Cancellation cannot undo an OS operation that already happened.
-- Permission hooks can precede automatic approval; slow reviews can still cause an unnecessary alert. Supported question-tool events are detected; arbitrary question text is not. Async question-tool return is not proof the user answered.
+- A matching tool start clears its permission wait immediately, so automatically resolved permission hooks do not pause media while the command is already running. A request that remains unresolved past the grace period still asks for attention. Supported question-tool events are detected; arbitrary question text is not. Async question-tool return is not proof the user answered.
 - Learning uses locally authored material and declared dependencies. It does not describe private model reasoning or prove a declared package is deployed.
 
 DRM, closed players, inaccessible embeds, autoplay policy, OS focus rules, and regional availability can limit control. Interlude reports unavailable readiness or failed confirmation. See [browser compatibility](docs/platforms.md), [native behavior](docs/native-platforms.md), and [backend reliability](docs/backend-review.md).
 
 ## Local state and uninstall
 
-Pairing codes are private bearer credentials. Their installation-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. Print **only the directory** with:
+The automatic pairing token is a private bearer credential shared only with Interlude's pinned extension origin. Its installation-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. Print **only the directory** with:
 
 ```sh
 node --input-type=module -e "import { stateDirectory } from './src/config.mjs'; console.log(stateDirectory());"
 ```
 
-An existing prototype `.local/connection.json` migrates without changing its code. `INTERLUDE_STATE_DIR` can override the directory with an absolute private local path. Keep it outside shared or synced folders.
+An existing prototype `.local/connection.json` migrates without changing its token. `INTERLUDE_STATE_DIR` can override the directory with an absolute private local path. Keep it outside shared or synced folders.
 
-To revoke pairing, disconnect the extension, stop the companion, and delete only `connection.json` in the printed directory. Restart and pair with the new code. To uninstall:
+To revoke pairing, disconnect the extension, stop the companion, and delete only `connection.json` in the printed directory. Restart the companion and choose **Connect companion** in the extension when you want to pair again. To uninstall:
 
 ```sh
 npm run hooks:remove

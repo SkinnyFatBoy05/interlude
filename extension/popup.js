@@ -14,6 +14,8 @@ async function request(message) {
     status(state.connected && state.selected
       ? `${state.mediaReady ? 'Player ready' : 'Tab selected · open a player'} · ${state.title}\n${state.message}`
       : state.message);
+    $('#connect').hidden = state.connected;
+    $('#disconnect').hidden = !state.connected;
     const previous = $('#tabs').value || String(state.tabId || '');
     tabs = result.tabs || [];
     $('#tabs').replaceChildren();
@@ -39,10 +41,7 @@ async function operate(action) {
     schedule();
   }
 }
-$('#pair-form').addEventListener('submit', event => {
-  event.preventDefault();
-  operate(async () => { if (await request({ type: 'pair', token: $('#code').value.trim() })) $('#code').value = ''; });
-});
+$('#connect').addEventListener('click', () => operate(() => request({ type: 'connect' })));
 $('#select').addEventListener('click', () => {
   const tab = tabs.find(item => item.id === Number($('#tabs').value));
   if (!tab) return;

@@ -12,7 +12,7 @@ let connecting = false;
 let diagnosticTimer;
 let diagnosticRequestedAt = 0;
 let bridgeReady = false;
-const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'copy-code', 'next', 'previous', 'reveal'];
+const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'next', 'previous', 'reveal'];
 function connectionReady(ready) {
   bridgeReady = ready;
   $('connection-dot').classList.toggle('online', ready);
@@ -161,13 +161,6 @@ $('toggle').addEventListener('click', () => {
 });
 for (const key of ['autoReturn', 'maximize', 'resume', 'minimize']) $(key).addEventListener('change', () => send({ type: 'settings', patch: { [key]: $(key).checked } }));
 for (const id of ['connect-browser', 'hook-setup']) $(id).addEventListener('click', () => $('setup-dialog').showModal());
-$('copy-code').addEventListener('click', async () => {
-  const status = $('copy-status');
-  status.hidden = false;
-  if (!/^[a-f0-9]{64}$/.test(token || '')) { status.textContent = 'Wait for the companion to connect, then try again.'; return; }
-  try { await navigator.clipboard.writeText(token); status.textContent = 'Copied. Open Extensions → Interlude in your browser toolbar, then paste and connect.'; }
-  catch { status.textContent = 'Clipboard access was denied. Open this page in Brave, Chrome, or Edge and try again.'; }
-});
 $('check-setup').addEventListener('click', () => {
   if (socket?.readyState !== WebSocket.OPEN) { toast('Connect the local companion first.'); return; }
   $('check-setup').disabled = true;

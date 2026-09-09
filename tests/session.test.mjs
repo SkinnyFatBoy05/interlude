@@ -15,6 +15,11 @@ function setup() {
 test('prompt hands off once after grace period', () => { const h = setup(); h.event('UserPromptSubmit'); assert.deepEqual(h.advance(1100), []); assert.equal(h.advance(101)[0].type, 'handoff'); assert.deepEqual(h.advance(1000), []); });
 test('a short response does not open a video', () => { const h = setup(); h.event('UserPromptSubmit'); h.advance(200); h.event('Stop'); const effects = h.advance(1400); assert.deepEqual(effects.map(e => e.type), ['attention']); assert.equal(h.session.state.status, 'complete'); });
 test('permission immediately resolved cancels attention', () => { const h = setup(); h.event('UserPromptSubmit'); h.event('PermissionRequest'); h.advance(500); h.event('PostToolUse'); assert.equal(h.session.state.status, 'running'); assert.equal(h.advance(1500)[0].type, 'handoff'); });
+test('a matching tool start proves permission is resolved before attention fires', () => {
+  const h = setup(); h.event('UserPromptSubmit'); h.event('PermissionRequest'); h.advance(500); h.event('PreToolUse');
+  assert.equal(h.session.state.status, 'running');
+  assert.equal(h.advance(1000)[0].type, 'handoff');
+});
 test('unrelated tool completion does not clear a permission request', () => { const h = setup(); h.event('UserPromptSubmit'); h.event('PermissionRequest'); h.event('PostToolUse', { toolKey: 'unrelated' }); assert.equal(h.advance(1500)[0].reason, 'permission'); });
 test('input requests return and matching answer resumes', () => { const h = setup(); h.event('UserPromptSubmit'); h.event('PreToolUse', { tool: 'question' }); assert.equal(h.advance(400)[0].reason, 'input'); h.event('PostToolUse', { tool: 'question' }); assert.equal(h.advance(1000)[0].type, 'handoff'); });
 test('async question tool returning does not mean the user answered', () => { const h = setup(); h.event('UserPromptSubmit'); h.event('PreToolUse', { tool: 'question', asyncQuestion: true }); h.event('PostToolUse', { tool: 'question', asyncQuestion: true }); assert.equal(h.session.state.status, 'input'); });

@@ -23,6 +23,7 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
   try {
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const extensionId = new URL(worker.url()).host;
+    expect(extensionId).toBe('ppfnbagemmijocfmjepgkfljddnkcghn');
     const source = silentWave();
     await context.route('https://www.youtube.com/**', route => route.fulfill({
       contentType: 'text/html; charset=utf-8', body: `<!doctype html><html><head><meta charset="utf-8"><title>Interlude media fixture</title></head><body>
@@ -39,8 +40,6 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
 
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await popup.getByLabel('Connection code', { exact: true }).fill('b'.repeat(64));
-    await popup.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(popup.locator('#status')).toContainText(/Connected/i);
     await expect(popup.locator('#tabs option')).toContainText(['Interlude media fixture']);
     const mediaOption = popup.locator('#tabs option').filter({ hasText: 'Interlude media fixture' });
@@ -69,6 +68,9 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     // Wait for the actual pause acknowledgment. A new prompt before this point
     // can cancel the in-flight pause; rapid cancellation is covered separately.
     await expect(dashboard.locator('#notice')).toHaveText('Codex finished responding. Review its result.');
+    const release = popup.getByRole('button', { name: 'Release playback', exact: true });
+    await expect(release).toBeVisible();
+    await expect(release).toHaveCSS('color', 'rgb(202, 255, 61)');
     await media.getByRole('button', { name: 'Autoplay preview', exact: true }).click();
     await expect.poll(() => media.locator('#preview').evaluate(video => video.paused)).toBe(true);
     await event('UserPromptSubmit', 'browser-2');

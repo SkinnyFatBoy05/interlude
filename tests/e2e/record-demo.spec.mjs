@@ -27,6 +27,7 @@ test('record the real beta extension across two projects', async () => {
   try {
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     const extensionId = new URL(worker.url()).host;
+    expect(extensionId).toBe('ppfnbagemmijocfmjepgkfljddnkcghn');
     const dashboard = await context.newPage(); dashboardVideo = dashboard.video();
     const media = await context.newPage(); mediaVideo = media.video();
     await context.route('https://www.youtube.com/**', async route => {
@@ -44,8 +45,6 @@ test('record the real beta extension across two projects', async () => {
     await expect(dashboard.locator('#connection-dot')).toHaveClass('online');
     await media.goto('https://www.youtube.com/watch?v=interlude-generated-demo');
     const popup = await context.newPage(); await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-    await popup.getByLabel('Connection code', { exact: true }).fill('b'.repeat(64));
-    await popup.getByRole('button', { name: 'Connect', exact: true }).click();
     await expect(popup.locator('#status')).toContainText(/Connected/);
     const option = popup.locator('#tabs option').filter({ hasText: 'Interlude test player' });
     await popup.getByLabel('Your media tab', { exact: true }).selectOption(await option.getAttribute('value'));

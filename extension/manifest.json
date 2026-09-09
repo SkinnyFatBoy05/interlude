@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Interlude — Your media, between prompts",
-  "version": "0.3.0",
+  "version": "0.3.1",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6bq7fPi6zXXA43x8c0Rm4NHWPeEz9NghzWBrSpIiYeAp12qf0KG/EnphnZ3eWct857PRf6hV/CInJsK5mjXVsI2bgJy2jE4Zz2eQ4u5sUifwgUFN/HKdQ0+oSRIXBckNh1pQ2O4Nklm6fHVmmLbreU+07oUH15gUsX952aQSz+Nv1bODrYDKdy97nMXpEb3WZgr5oSfaTH+zjRK4RnXELhRzyjSyc7W6X+Oz1mVrzyHB5TN+NshM4dHKIiT2GspGoevtmEpCC1mmO7x8w/UiA14+jQw5bdGHryrLa0waFHcnFGbICHVf/O+zCY5qAI3JscbVpWh00w0ZNvyB2OYMqwIDAQAB",
   "description": "Pause your chosen media tab when Codex needs attention. Pair with the local Interlude companion.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -89,5 +90,5 @@
     "https://soundcloud.com/*",
     "https://www.soundcloud.com/*"
   ],
-  "version_name": "0.3.0 beta 1"
+  "version_name": "0.3.1 beta 2"
 }

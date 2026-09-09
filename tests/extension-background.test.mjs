@@ -7,11 +7,16 @@ import { SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor } from '../ex
 const code = (await readFile(new URL('../extension/background.js', import.meta.url), 'utf8')).replace(/^import .*;\r?\n/gm, '');
 const flush = async () => { for (let count = 0; count < 8; count++) await new Promise(resolve => setImmediate(resolve)); };
 function event() { const listeners = []; return { addListener(fn) { listeners.push(fn); }, emit(...args) { let handled = false; for (const fn of listeners) if (fn(...args) === true) handled = true; return handled; } }; }
-async function background(t, { selected = 12, url = 'https://www.youtube.com/watch?v=one', mediaReady = false, failure = false, perform } = {}) {
-  const local = { token: 'a'.repeat(64) }; const session = { selection: selected ? { tabId: selected } : {} };
+async function background(t, { selected = 12, url = 'https://www.youtube.com/watch?v=one', mediaReady = false, failure = false, perform, token = 'a'.repeat(64), pairToken = 'b'.repeat(64) } = {}) {
+  const local = token ? { token } : {}; const session = { selection: selected ? { tabId: selected } : {} };
   const tabs = new Map([[12, { id: 12, windowId: 8, url, title: 'Chosen media' }]]);
   const messages = []; const sockets = []; const actions = []; const injected = []; const timers = new Set();
-  const area = data => ({ get: async key => ({ [key]: structuredClone(data[key]) }), set: async values => Object.assign(data, structuredClone(values)), remove: async key => { delete data[key]; }, setAccessLevel: async () => {} });
+  const area = data => ({
+    get: async key => Object.fromEntries((Array.isArray(key) ? key : [key]).map(name => [name, structuredClone(data[name])])),
+    set: async values => Object.assign(data, structuredClone(values)),
+    remove: async key => { for (const name of Array.isArray(key) ? key : [key]) delete data[name]; },
+    setAccessLevel: async () => {},
+  });
   const chrome = {
     storage: { local: area(local), session: area(session) },
     tabs: { get: async id => { if (!tabs.has(id)) throw new Error('Closed.'); return { ...tabs.get(id) }; }, query: async () => [...tabs.values()], onRemoved: event(), onUpdated: event() },
@@ -24,7 +29,11 @@ async function background(t, { selected = 12, url = 'https://www.youtube.com/wat
   class Socket {
     static OPEN = 1; static CONNECTING = 0;
     constructor() { this.readyState = 0; sockets.push(this); queueMicrotask(() => { this.readyState = 1; this.onopen?.(); }); }
-    send(raw) { const message = JSON.parse(raw); messages.push(message); if (message.type === 'hello') queueMicrotask(() => this.onmessage?.({ data: JSON.stringify({ type: 'ready' }) })); }
+    send(raw) {
+      const message = JSON.parse(raw); messages.push(message);
+      if (message.type === 'pair') queueMicrotask(() => this.onmessage?.({ data: JSON.stringify({ type: 'paired', token: pairToken }) }));
+      if (message.type === 'hello') queueMicrotask(() => this.onmessage?.({ data: JSON.stringify({ type: 'ready' }) }));
+    }
     close() { this.readyState = 3; this.onclose?.({ code: 1000 }); }
     receive(message) { this.onmessage?.({ data: JSON.stringify(message) }); }
   }
@@ -53,14 +62,16 @@ test('a selected text-only feed remains selected while mediaReady is false', asy
   assert.equal(result.state.selected, true); assert.equal(result.state.mediaReady, false); assert.equal(result.state.platform, 'instagram');
   assert.ok(h.messages.some(message => message.type === 'browser' && message.selected && !message.mediaReady));
 });
-test('the exact extension popup can pair when opened in an ordinary browser tab', async t => {
+test('the exact extension popup can read connection state when opened in an ordinary browser tab', async t => {
   const h = await background(t, { selected: null });
   const sender = { id: 'test', url: 'chrome-extension://test/popup.html', tab: { id: 77, url: 'chrome-extension://test/popup.html' }, frameId: 0 };
   const before = await h.request({ type: 'status' }, sender);
   assert.equal(before?.ok, true);
-  const paired = await h.request({ type: 'pair', token: 'b'.repeat(64) }, sender);
-  assert.equal(paired?.ok, true); assert.equal(h.local.token, 'b'.repeat(64));
-  await flush();
+});
+test('an unpaired extension discovers the running local companion automatically', async t => {
+  const h = await background(t, { selected: null, token: null });
+  assert.ok(h.messages.some(message => message.type === 'pair' && message.role === 'extension'));
+  assert.equal(h.local.token, 'b'.repeat(64));
   assert.ok(h.messages.some(message => message.type === 'hello' && message.token === 'b'.repeat(64)));
 });
 test('content scripts, foreign extensions and deceptive popup URLs cannot pair', async t => {

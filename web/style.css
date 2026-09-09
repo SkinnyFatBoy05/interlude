@@ -778,6 +778,13 @@ dialog ol {
   line-height: 1.65;
 }
 
+dialog .pairing-note {
+  padding: 12px 14px;
+  border-left: 2px solid var(--accent);
+  color: var(--ink);
+  background: #080808;
+}
+
 dialog .close {
   position: absolute;
   top: 13px;

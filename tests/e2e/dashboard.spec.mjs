@@ -42,7 +42,7 @@ test('both modes, attention events, answer reveal, and diagnostics work in the r
   expect(errors).toEqual([]);
 });
 
-test('setup remains usable on a narrow screen and pairing confirmation is inside the dialog', async ({ page }) => {
+test('setup remains usable on a narrow screen and explains automatic pairing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.locator('#connection-dot')).toHaveClass('online');
@@ -50,9 +50,10 @@ test('setup remains usable on a narrow screen and pairing confirmation is inside
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.getByRole('button', { name: /Connect browser|Browser setup/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'Copy connection code', exact: true }).click();
-  await expect(page.locator('#copy-status')).toBeVisible();
-  await expect(page.locator('#copy-status')).toHaveText(/Copied\.|Clipboard access was denied/);
+  await expect(page.getByRole('dialog')).toContainText('The extension pairs with it automatically.');
+  await expect(page.getByRole('dialog')).toContainText('Interlude generates the path below for this computer.');
+  await expect(page.locator('#extension-path')).toHaveText(/[\\/]extension$/);
+  await expect(page.getByRole('dialog')).toContainText('No account or connection code required.');
   await page.getByRole('button', { name: 'Close setup', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });

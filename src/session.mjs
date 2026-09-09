@@ -116,20 +116,21 @@ export class Session {
     } else if (['PreToolUse', 'PostToolUse'].includes(event.event)) {
       const wasWaiting = ['permission', 'input', 'stopping'].includes(this.state.status);
       const waiting = this.waits.get(event.toolKey);
+      const matchingStart = event.event === 'PreToolUse' && waiting?.reason === 'permission';
       const matchingResult = event.event === 'PostToolUse' && !!waiting && !event.asyncQuestion && !waiting.asyncQuestion;
       if (event.event === 'PostToolUse' && !event.asyncQuestion) {
         this.finishedTools.set(event.toolKey, event.at);
         if (this.finishedTools.size > 1000) this.finishedTools.delete(this.finishedTools.keys().next().value);
       }
       if (event.event === 'PreToolUse') this.finishedTools.delete(event.toolKey);
-      if (matchingResult) this.waits.delete(event.toolKey);
-      if (this.state.status === 'stopping' || (wasWaiting && matchingResult && this.waits.size === 0)) {
+      if (matchingStart || matchingResult) this.waits.delete(event.toolKey);
+      if (this.state.status === 'stopping' || (wasWaiting && (matchingStart || matchingResult) && this.waits.size === 0)) {
         this.epoch += 1;
         this.pending = null;
         this.state.status = 'running';
         this.waitKey = null;
         if (this.state.enabled && !this.state.manualHold) this.pending = { type: 'handoff', due: now + 900 };
-      } else if (matchingResult) {
+      } else if (matchingStart || matchingResult) {
         this.epoch += 1;
         this.state.status = [...this.waits.values()].some(wait => wait.reason === 'input') ? 'input' : 'permission';
         this.pending = this.state.enabled && !this.state.manualHold ? { type: 'attention', reason: this.state.status, due: now + 300 } : null;

@@ -13,7 +13,9 @@ import * as nativePlatform from './platform.mjs';
 
 const WEB = path.join(ROOT, 'web');
 const files = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']]]);
-const extensionOrigin = origin => typeof origin === 'string' && /^chrome-extension:\/\/[a-p]{32}$/.test(origin);
+export const INTERLUDE_EXTENSION_ID = 'ppfnbagemmijocfmjepgkfljddnkcghn';
+export const INTERLUDE_EXTENSION_ORIGIN = 'chrome-extension://' + INTERLUDE_EXTENSION_ID;
+const extensionOrigin = origin => origin === INTERLUDE_EXTENSION_ORIGIN;
 export function sameToken(value, token) {
   return typeof value === 'string' && typeof token === 'string' && Buffer.byteLength(value) === Buffer.byteLength(token) && timingSafeEqual(Buffer.from(value), Buffer.from(token));
 }
@@ -205,6 +207,10 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
       try { message = JSON.parse(raw.toString()); } catch { ws.close(1008, 'Invalid message'); return; }
       if (!message || typeof message !== 'object' || Array.isArray(message)) { ws.close(1008, 'Invalid message'); return; }
       if (!ws.role) {
+        if (message.type === 'pair' && message.role === 'extension' && extensionOrigin(req.headers.origin)) {
+          send(ws, { type: 'paired', token: secret });
+          return;
+        }
         const role = req.headers.origin === origin() ? 'dashboard' : 'extension';
         if (message.type !== 'hello' || message.role !== role || !sameToken(message.token, secret)) { ws.close(1008, 'Pairing rejected'); return; }
         clearTimeout(authTimer);

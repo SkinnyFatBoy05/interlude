@@ -2,6 +2,14 @@
 
 This record distinguishes implementation and automated tests from tests on real accounts and desktops. A registered host is a compatibility target, not a certification that every player on that service is supported.
 
+## 0.3.1 private beta 2 — 2026-09-09
+
+This update pins the unpacked extension identity and uses its exact browser origin to pair automatically over the local WebSocket bridge. The setup screen now generates the extension folder path from the companion's install location on each computer, so testers no longer copy a connection code. Explicit Disconnect still disables automatic reconnection until the tester chooses Connect companion.
+
+The permission reducer now treats a matching tool start as proof that a permission request was resolved. This cancels the pending attention return before it can pause media, while unrelated and parallel permission waits remain tracked. The extension popup now matches the black and acid-green dashboard; the Release playback control is verified at `rgb(202, 255, 61)` in Chromium.
+
+Local Windows verification passed 174 of 176 Node tests with two platform skips, all four required Playwright browser tests, JavaScript and manifest checks, the native compilation/protocol smoke, source and extension packaging, and an npm audit with zero known vulnerabilities. The internal browser also verified the live automatic-pairing instructions and computer-specific extension path. Live macOS activation, signed-in service playback, and browser-store distribution still require beta validation.
+
 ## 0.3.0 private beta — 2026-09-07
 
 The beta adds all-local-project monitoring with independent chat state, an attention queue, acknowledgement, project-specific lessons, sanitized debug summaries, and tester onboarding. See [beta-testing.md](beta-testing.md) for installation, acceptance checks, recovery and known limitations.

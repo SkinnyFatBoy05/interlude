@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 — private beta 2
+
+- Pair the browser extension with the local companion automatically; connection-code copying is no longer part of setup.
+- Pin the unpacked extension identity and restrict token bootstrap and WebSocket access to that exact extension origin.
+- Resolve a permission wait as soon as its matching tool starts, preventing false pauses after automatic approval.
+- Match the extension popup and Release playback control to the black and acid-green dashboard.
+
 ## 0.3.0 — private beta
 
 - Monitor all local Codex chats and projects with independent task state and a bounded attention queue.

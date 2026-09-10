@@ -71,6 +71,10 @@ test('installed extension pairs, pauses media, blocks feed autoplay, resumes own
     const release = popup.getByRole('button', { name: 'Release playback', exact: true });
     await expect(release).toBeVisible();
     await expect(release).toHaveCSS('color', 'rgb(202, 255, 61)');
+    const inPageRelease = media.getByRole('button', { name: 'Release playback', exact: true });
+    await expect(inPageRelease).toBeVisible();
+    await expect(inPageRelease).toHaveCSS('color', 'rgb(202, 255, 61)');
+    await expect(media.locator('[data-interlude-control] aside')).toHaveCSS('background-color', 'rgb(12, 12, 12)');
     await media.getByRole('button', { name: 'Autoplay preview', exact: true }).click();
     await expect.poll(() => media.locator('#preview').evaluate(video => video.paused)).toBe(true);
     await event('UserPromptSubmit', 'browser-2');

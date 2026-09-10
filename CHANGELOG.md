@@ -6,6 +6,7 @@
 - Pin the unpacked extension identity and restrict token bootstrap and WebSocket access to that exact extension origin.
 - Resolve a permission wait as soon as its matching tool starts, preventing false pauses after automatic approval.
 - Match the extension popup and Release playback control to the black and acid-green dashboard.
+- Replace the demo's colour bars and dark-green canvas with a low-motion monochrome clip and true black recording shell.
 
 ## 0.3.0 — private beta
 

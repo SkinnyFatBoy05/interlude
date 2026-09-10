@@ -80,7 +80,7 @@
     banner.style.cssText = 'position:fixed!important;bottom:18px!important;right:18px!important;z-index:2147483647!important;display:block!important;';
     const root = banner.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
-    style.textContent = ':host{all:initial}aside{background:#163b30;color:white;padding:12px 16px;border-radius:12px;box-shadow:0 4px 28px #0005;font:14px/1.4 system-ui,sans-serif;max-width:310px}p{margin:0 0 8px}button{border:1px solid #fff8;background:#fff;color:#163b30;border-radius:6px;padding:7px 10px;font:600 13px system-ui;cursor:pointer}button:focus-visible{outline:3px solid #d7ee98;outline-offset:3px}';
+    style.textContent = ':host{all:initial}aside{max-width:310px;padding:14px 16px;border:1px solid #30322d;border-left:3px solid #caff3d;border-radius:0;background:#0c0c0c;color:#f5f7ef;box-shadow:0 12px 36px #000a;font:14px/1.45 system-ui,sans-serif}p{margin:0 0 10px;color:#cbd0c6}button{padding:8px 11px;border:1px solid #caff3d;border-radius:0;background:transparent;color:#caff3d;font:650 13px system-ui;cursor:pointer}button:hover{background:#caff3d;color:#101400}button:focus-visible{outline:2px solid #caff3d;outline-offset:3px}';
     const box = document.createElement('aside'); box.setAttribute('aria-label', 'Interlude playback control');
     const message = document.createElement('p'); message.textContent = 'Interlude has paused playback while you focus.';
     const button = document.createElement('button'); button.textContent = 'Release playback';

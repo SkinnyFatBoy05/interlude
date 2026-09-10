@@ -35,10 +35,18 @@ test('record the real beta extension across two projects', async () => {
         await route.fulfill({ contentType: 'video/webm', body: await readFile(path.join(output, 'sample.webm')) }); return;
       }
       await route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<!doctype html><html><head><meta charset="utf-8"><title>Interlude test player</title>
-      <style>body{margin:0;background:#102c24;color:#f8f8ef;font:22px system-ui;padding:44px}small{color:#d6ec9d}h1{font-size:44px;margin:16px 0 24px}video{width:100%;border-radius:16px;background:#091d17}button{padding:16px 24px;border:0;border-radius:12px;background:#dbf3a2;font-size:22px;color:#163b30;margin:24px 0}#state{font-size:32px;font-weight:700}#clock{font:30px monospace}aside{border-top:1px solid #ffffff30;margin-top:32px;padding-top:24px;line-height:1.6}#chapter{min-height:80px;color:#d6ec9d}</style></head>
-      <body><small>REAL HTML MEDIA · CONTROLLED BY THE EXTENSION</small><h1>Your break, under control.</h1>
-      <video id="main" src="/interlude-fixture.webm" loop controls></video><button id="play">Start sample video</button>
-      <div id="state">PAUSED</div><div id="clock">00.00 seconds</div><aside><div id="chapter">Pairing the real extension…</div><p>Functional beta recording. Codex hooks are simulated; desktop activation is mocked. This is a generated test clip, not a live YouTube or paid-streaming session.</p></aside>
+      <style>
+        :root{color-scheme:dark;--accent:#caff3d;--ink:#f5f7ef;--muted:#92978e;--line:#30322d;--surface:#0c0c0c}
+        *{box-sizing:border-box}body{min-height:100vh;margin:0;padding:44px;background:#050505;color:var(--ink);font:22px/1.45 Inter,ui-sans-serif,system-ui,sans-serif}
+        small{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.12em}h1{max-width:650px;margin:14px 0 26px;font-size:46px;line-height:1.02;letter-spacing:-.04em}
+        .player{padding:12px;border:1px solid var(--line);background:var(--surface)}video{display:block;width:100%;border-radius:0;background:#050505}
+        button{margin:20px 0 0;padding:14px 20px;border:1px solid var(--accent);border-radius:0;background:var(--accent);color:#101400;font:700 16px system-ui;cursor:pointer}
+        .metrics{display:flex;align-items:baseline;gap:18px;margin:22px 0 28px}.metrics span{color:var(--accent);font-size:15px;font-weight:750;letter-spacing:.1em}.metrics time{color:var(--ink);font:26px ui-monospace,monospace}
+        aside{padding-top:24px;border-top:1px solid var(--line);line-height:1.55}#chapter{min-height:78px;padding:16px 18px;border-left:3px solid var(--accent);background:var(--surface);color:var(--ink)}aside p{max-width:780px;margin:20px 0 0;color:var(--muted);font-size:16px}
+      </style></head>
+      <body><small>REAL HTML MEDIA · CONTROLLED BY THE EXTENSION</small><h1>Your break,<br>under control.</h1>
+      <div class="player"><video id="main" src="/interlude-fixture.webm" loop controls></video></div><button id="play">Start sample video</button>
+      <div class="metrics"><span id="state">PAUSED</span><time id="clock">00.00 seconds</time></div><aside><div id="chapter">Pairing the real extension…</div><p>Functional beta recording. Codex hooks are simulated; desktop activation is mocked. This is a generated test clip, not a live YouTube or paid-streaming session.</p></aside>
       <script>const v=document.getElementById('main');document.getElementById('play').onclick=()=>v.play();setInterval(()=>{document.getElementById('state').textContent=v.paused?'PAUSED':'PLAYING';document.getElementById('clock').textContent=v.currentTime.toFixed(2)+' seconds';},100);</script></body></html>` });
     });
     await dashboard.goto('http://127.0.0.1:4318/');

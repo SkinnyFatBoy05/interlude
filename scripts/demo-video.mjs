@@ -8,10 +8,11 @@ await mkdir(folder, { recursive: true });
 const ffmpeg = process.env.FFMPEG_PATH || 'ffmpeg';
 const run = args => execFileSync(ffmpeg, ['-hide_banner', '-loglevel', 'error', '-y', ...args], { stdio: 'inherit', windowsHide: true, timeout: 180000 });
 if (process.argv[2] === 'prepare') {
-  run(['-f', 'lavfi', '-i', 'testsrc2=size=864x486:rate=24', '-t', '90', '-c:v', 'libvpx', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '700k', path.join(folder, 'sample.webm')]);
+  const source = 'gradients=size=864x486:rate=24:c0=0x050505:c1=0x111111:c2=0x1c1c1c:c3=0x090909:n=4:speed=0.003:type=radial,drawgrid=w=96:h=96:t=1:c=white@0.055,vignette=PI/5';
+  run(['-f', 'lavfi', '-i', source, '-t', '90', '-c:v', 'libvpx', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '700k', '-pix_fmt', 'yuv420p', path.join(folder, 'sample.webm')]);
 } else if (process.argv[2] === 'compose') {
   const file = path.join(folder, 'interlude-beta-demo.mp4');
-  const filter = "[0:v]setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];[a][b]hstack=inputs=2:shortest=1,pad=iw:ih+120:0:60:color=0x102c24,drawtext=text='INTERLUDE BETA  |  Two projects. One controlled break.':fontcolor=white:fontsize=30:x=32:y=16,drawtext=text='REAL dashboard + extension + media control  |  SIMULATED Codex events  |  Native focus mocked':fontcolor=white:fontsize=22:x=32:y=h-43";
+  const filter = "[0:v]setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];[a][b]hstack=inputs=2:shortest=1,pad=iw:ih+120:0:60:color=0x050505,drawbox=x=0:y=59:w=iw:h=1:color=0xcaff3d@0.45:t=fill,drawbox=x=0:y=ih-60:w=iw:h=1:color=0xcaff3d@0.45:t=fill,drawtext=text='INTERLUDE BETA':fontcolor=0xcaff3d:fontsize=28:x=32:y=17,drawtext=text='Two projects. One controlled break.':fontcolor=white:fontsize=28:x=310:y=17,drawtext=text='REAL dashboard + extension + media control  |  SIMULATED Codex events  |  Native focus mocked':fontcolor=0xa4a69f:fontsize=21:x=32:y=h-42";
   run(['-i', path.join(folder, 'dashboard.webm'), '-i', path.join(folder, 'media.webm'), '-filter_complex', filter, '-c:v', 'libx264', '-preset', 'fast', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', file]);
   for (const [name, seconds] of [['poster', '11'], ['paused', '19'], ['learning', '31']]) run(['-ss', seconds, '-i', file, '-frames:v', '1', path.join(folder, `${name}.jpg`)]);
   const metadata = JSON.parse(execFileSync(process.env.FFPROBE_PATH || 'ffprobe', ['-v', 'error', '-show_entries', 'format=duration:stream=codec_name,width,height', '-of', 'json', file], { encoding: 'utf8', windowsHide: true }));

@@ -2,6 +2,18 @@
 
 This record distinguishes implementation and automated tests from tests on real accounts and desktops. A registered host is a compatibility target, not a certification that every player on that service is supported.
 
+## 0.4.0 desktop release candidate — 2026-09-12
+
+Implementation commit `defa702` passed [all ten CI jobs](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34679059681): Node 22/24 on Windows/macOS/Linux, Chromium dashboard/extension and demo recording, and desktop packaging plus UI/runtime smoke on Windows x64, macOS ARM64 and macOS Intel.
+
+The unit/integration suite has 184 cases. Local Windows passed 182 with two filesystem/platform skips. Packaged desktop checks exercised the sandboxed renderer, guided setup, execution of the exact installed bundled-runtime hook command, preservation/removal of temporary hooks, preferences, and debug-summary copying. Native helpers compiled and passed their no-focus protocol checks on Windows and both Mac architectures. A subsequent smoke assertion also exercises the packaged helper through Check setup; it passed locally on Windows. See the latest CI run for that assertion on Mac.
+
+Visual QA used the real Electron dashboard and Chromium at desktop and 390px widths. A hidden task column that squeezed the status text was removed, headings were reduced, and running/demo surfaces remain black. Generated video uses simulated Codex events and HTML media, with native foreground activation mocked.
+
+Mac startup testing caught a packaging exclusion: modules shared with the separate hook runtime were omitted from app.asar. Hook resources now stage independently, and every build asserts required archive modules and separate runtime files exist. Startup import errors are caught and surfaced. Windows upgrades preserve installed hooks; explicit uninstall removes only the matching installation's handlers.
+
+Artifacts are release candidates: Windows unsigned, Mac ad-hoc signed with no notarization. No public release or store publication occurred. Trusted signing, clean-machine installer/upgrade/uninstall acceptance, real Codex foreground behavior across displays/Spaces, and signed-in service-player coverage remain release gates.
+
 ## 0.3.1 private beta 2 — 2026-09-09
 
 This update pins the unpacked extension identity and uses its exact browser origin to pair automatically over the local WebSocket bridge. The setup screen now generates the extension folder path from the companion's install location on each computer, so testers no longer copy a connection code. Explicit Disconnect still disables automatic reconnection until the tester chooses Connect companion.

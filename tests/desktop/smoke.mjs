@@ -80,16 +80,22 @@ try {
   await page.getByRole('button', { name: 'Locked-in mode', exact: true }).click();
   await expect(page.locator('#lesson')).toBeVisible();
   await page.getByText('Connection details', { exact: true }).click();
+  await page.getByRole('button', { name: 'Check setup', exact: true }).click();
+  await expect.poll(() => page.evaluate(async () => {
+    const response = await fetch('/api/bootstrap', { headers: { 'X-Interlude-Client': 'dashboard' } });
+    return (await response.json()).state.diagnostics?.helperReady;
+  })).toBe(true);
   await page.getByRole('button', { name: 'Copy debug summary', exact: true }).click();
   await expect(page.locator('#support-status')).toContainText('Copied.');
   const output = path.join(ROOT, 'artifacts', 'desktop-qa'); await mkdir(output, { recursive: true });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: path.join(output, executablePath ? 'packaged.png' : 'development.png') });
   assert.deepEqual(errors, []);
   const runtime = { packaged: metadata.packaged, version: metadata.version };
   await desktop.close(); desktop = null;
   const preferences = JSON.parse(await readFile(path.join(env.INTERLUDE_STATE_DIR, 'preferences.json'), 'utf8'));
   assert.equal(preferences.mode, 'learn'); assert.equal(preferences.enabled, undefined);
-  console.log(JSON.stringify({ ok: true, ...runtime, checks: ['sandbox', 'renderer isolation', 'guided setup', 'bundled hook execution', 'hook removal', 'preferences', 'console'] }));
+  console.log(JSON.stringify({ ok: true, ...runtime, checks: ['sandbox', 'renderer isolation', 'guided setup', 'bundled hook execution', 'packaged native diagnostics', 'debug copy', 'hook removal', 'preferences', 'console'] }));
 } finally {
   await desktop?.close();
   if (packagedProcess && packagedProcess.exitCode === null) packagedProcess.kill();

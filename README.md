@@ -122,6 +122,6 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Packaging produces deterministic source and unpacked-extension ZIPs with SHA-256 manifests in `artifacts/release`. An explicit allowlist excludes secrets, runtime state, dependencies, browser profiles, and activation history. These are not signed installers or browser-store packages. No open-source license grant is included.
+`npm run package:release` produces deterministic source and unpacked-extension ZIPs with SHA-256 manifests in `artifacts/release`. An explicit allowlist excludes secrets, runtime state, dependencies, browser profiles, and activation history. For desktop installers use the [desktop build and signing workflow](docs/desktop-release.md). No open-source license grant is included.
 
 Source map: `src/session.mjs` owns turn state; `src/server.mjs` owns authenticated transport and actions; `scripts/hook.mjs` sanitizes events; `extension/` controls media; `src/lessons.mjs` provides lessons; `src/platform.mjs` dispatches C# and Swift helpers; `web/` contains the dashboard.

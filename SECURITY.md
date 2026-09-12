@@ -10,4 +10,4 @@ Use current Node.js and browser security updates. Install dependencies with `npm
 
 Do not post pairing codes, private project content, or exploit details in public issues. Report ordinary bugs through the repository's issues. For a suspected vulnerability, request a private reporting channel from the maintainer before sharing sensitive details.
 
-Distribution archives are source and unpacked-extension bundles. They are not signed or notarized desktop installers. Native foreground activation and accessibility behavior depend on operating-system policy and must be checked on the target desktop.
+Distribution includes source and unpacked-extension archives plus desktop release-candidate installers. Windows test installers have no publisher signature; Mac test bundles have ad-hoc signatures without notarization. Trusted signing, notarization, and interactive native foreground/accessibility validation remain required for public production distribution.

@@ -2,7 +2,7 @@ const signedRelease = process.env.INTERLUDE_SIGNED_RELEASE === '1';
 module.exports = {
   appId: 'com.skinnyfatboy05.interlude', productName: 'Interlude',
   directories: { output: 'artifacts/desktop', buildResources: '.desktop-build' },
-  files: ['desktop/main.mjs', 'desktop/preload.cjs', 'desktop/policy.mjs', 'src/**', 'web/**',
+  files: ['desktop/bootstrap.cjs', 'desktop/main.mjs', 'desktop/preload.cjs', 'desktop/policy.mjs', 'src/**', 'web/**',
     'scripts/build-windows.mjs', 'scripts/build-macos.mjs', 'scripts/native-build.mjs', 'scripts/install-hooks.mjs',
     'package.json', 'PRIVACY.md', 'SECURITY.md'],
   extraResources: [

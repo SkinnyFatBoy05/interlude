@@ -19,8 +19,6 @@ let companion, window, tray;
 let quitting = false, closed = false, setupBusy = false;
 const smokeFile = process.env.INTERLUDE_DESKTOP_SMOKE_FILE;
 if (smokeFile) {
-  if (!path.isAbsolute(smokeFile)) throw new Error('Desktop smoke output must be an absolute path.');
-  app.setPath('userData', path.join(path.dirname(smokeFile), 'electron-profile'));
   console.log('Desktop smoke: main module loaded.');
 }
 

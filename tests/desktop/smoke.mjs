@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 import { ROOT } from '../../src/config.mjs';
@@ -26,6 +26,10 @@ try {
       let output = '';
       const timer = setTimeout(async () => {
         const metadata = await readFile(env.INTERLUDE_DESKTOP_SMOKE_FILE, 'utf8').catch(() => 'No startup metadata.');
+        if (process.platform === 'darwin') {
+          try { output += execFileSync('/usr/bin/sample', [String(packagedProcess.pid), '1'], { encoding: 'utf8', timeout: 5000, maxBuffer: 1024 * 1024 }).split('\n').slice(0, 150).join('\n'); }
+          catch (error) { output += error.message; }
+        }
         reject(new Error(`Packaged app did not expose its test renderer. ${output.slice(-4000)} ${metadata}`));
       }, 30000);
       packagedProcess.stdout.on('data', data => { output += data; });

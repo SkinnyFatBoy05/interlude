@@ -8,9 +8,10 @@ module.exports = {
   extraResources: [
     { from: '.desktop-build/native', to: 'native' },
     { from: '.desktop-build/icon.png', to: 'icon.png' },
-    { from: '.', to: 'companion', filter: ['src/config.mjs', 'src/events.mjs', 'scripts/hook.mjs', 'extension/**'] },
+    { from: '.desktop-build/companion', to: 'companion' },
   ],
   asar: true, npmRebuild: false,
+  afterPack: 'desktop/verify-package.cjs',
   electronFuses: { runAsNode: true, enableNodeOptionsEnvironmentVariable: false, enableNodeCliInspectArguments: false,
     enableEmbeddedAsarIntegrityValidation: true, onlyLoadAppFromAsar: true },
   artifactName: 'Interlude-${version}-${os}-${arch}.${ext}',

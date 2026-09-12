@@ -21,6 +21,7 @@ const smokeFile = process.env.INTERLUDE_DESKTOP_SMOKE_FILE;
 if (smokeFile) {
   if (!path.isAbsolute(smokeFile)) throw new Error('Desktop smoke output must be an absolute path.');
   app.setPath('userData', path.join(path.dirname(smokeFile), 'electron-profile'));
+  console.log('Desktop smoke: main module loaded.');
 }
 
 async function hooksInstalled() {
@@ -47,6 +48,7 @@ async function shutdown() {
   finally { closed = true; tray?.destroy(); app.quit(); }
 }
 async function initialize() {
+  if (smokeFile) console.log('Desktop smoke: application ready.');
   const native = app.isPackaged ? createPlatformController({
     prepareWindows: async () => path.join(process.resourcesPath, 'native', 'InterludeFocus.exe'),
     prepareMacOS: async () => path.join(process.resourcesPath, 'native', 'InterludeFocus'),
@@ -55,6 +57,7 @@ async function initialize() {
   companion = await createCompanion({ cwd: companionRoot, nativeFocus: native.focusCodex, nativeDiagnostics: native.platformDiagnostics,
     showLearning: async ({ signal }) => { if (signal.aborted) return { ok: false }; show(); return { ok: window?.isFocused() === true, message: 'Open Interlude to continue learning.' }; },
     ...(smokeFile ? { port: 0 } : {}) });
+  if (smokeFile) console.log('Desktop smoke: local companion ready.');
   window = new BrowserWindow({ width: 1200, height: 820, minWidth: 740, minHeight: 560, show: false,
     title: 'Interlude', backgroundColor: '#050505', autoHideMenuBar: true,
     webPreferences: { preload: path.join(directory, 'preload.cjs'), sandbox: true, contextIsolation: true,

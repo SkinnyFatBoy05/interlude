@@ -1,5 +1,4 @@
 import { chromium, expect } from '@playwright/test';
-import electronPath from 'electron';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -12,6 +11,7 @@ const env = { ...process.env, INTERLUDE_STATE_DIR: path.join(temporary, 'state')
   INTERLUDE_DESKTOP_SMOKE_FILE: path.join(temporary, 'ready.json') };
 delete env.ELECTRON_RUN_AS_NODE;
 const executablePath = process.argv[2] && path.resolve(process.argv[2]);
+const electronPath = executablePath ? null : (await import('electron')).default;
 let desktop;
 let packagedProcess, packagedPage;
 try {
@@ -23,8 +23,12 @@ try {
     // renderer's ephemeral loopback debugging port for packaged UI verification.
     packagedProcess = spawn(executablePath || electronPath, ['--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', ...(executablePath ? [] : [path.resolve(ROOT)])], { env, windowsHide: true });
     const endpoint = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Packaged app did not expose its test renderer.')), 30000);
       let output = '';
+      const timer = setTimeout(async () => {
+        const metadata = await readFile(env.INTERLUDE_DESKTOP_SMOKE_FILE, 'utf8').catch(() => 'No startup metadata.');
+        reject(new Error(`Packaged app did not expose its test renderer. ${output.slice(-4000)} ${metadata}`));
+      }, 30000);
+      packagedProcess.stdout.on('data', data => { output += data; });
       packagedProcess.stderr.on('data', data => { output += data; const match = output.match(/DevTools listening on (ws:\/\/\S+)/); if (match) { clearTimeout(timer); resolve(match[1]); } });
       packagedProcess.once('error', error => { clearTimeout(timer); reject(error); });
       packagedProcess.once('exit', code => { clearTimeout(timer); reject(new Error(`Packaged app exited before startup (${code}): ${output.slice(-1500)}`)); });

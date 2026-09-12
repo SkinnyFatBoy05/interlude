@@ -7,11 +7,22 @@ Interlude connects Codex desktop with one media tab in Chrome, Brave, or Edge. I
 - **Fun mode:** switches to your chosen media tab while Codex works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to Codex.
 - **Locked-in mode:** shows short lessons based on dependencies declared in your project's `package.json`, with evidence and questions. Observed tool events explain what changed.
 
-Version 0.3 is a **private technical beta** with all-project monitoring, separate chat states, an attention queue, Windows/macOS adapters, and 19 experimental media targets. Start with the [beta setup and test guide](docs/beta-testing.md). A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking Codex yourself. See the [verification record](docs/release-verification.md) for measured results and remaining release gates.
+Version 0.4 is a **desktop release candidate** with all-project monitoring, separate task states, an attention queue, Windows/macOS installers, and 19 experimental media targets. Start with the [desktop setup guide](docs/desktop-release.md). A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking Codex yourself. See the [verification record](docs/release-verification.md) for measured results and remaining public-release gates.
 
-## Requirements and startup
+## Install the desktop app
 
-- Node.js 22 or 24; Node 24 recommended.
+Desktop packages bundle the runtime and native helper; you do not need Node.js, a terminal, or a compiler. Current CI artifacts are unsigned testing builds, pending the owner's signing identities and macOS notarization.
+
+1. Quit an older terminal companion before opening Interlude; both use local port 4318.
+2. Open **Connect browser → Open extension folder**. Load that folder in Brave, Chrome, or Edge's extension manager. The displayed path belongs to your computer.
+3. Click **Connect Codex**, then review and trust the installed handlers in Codex `/hooks`. Existing handlers are preserved.
+4. Choose your media tab in the extension, then turn on Interlude.
+
+Closing the window keeps the app in the tray/menu bar. Quit from that menu to stop it. Launch at login is optional. Your mode and playback preferences are saved; monitoring always starts off and turns off on sleep or screen lock. Updates are downloaded explicitly from the release page; this version has no silent updater.
+
+## Run from source
+
+- Node.js 22.12 or newer; Node 24 recommended.
 - Codex desktop with lifecycle hooks, plus its CLI for reviewing hook trust.
 - Chrome, Brave, or Edge with Chromium 116 or later. Safari, Firefox, phone apps, and native entertainment apps are outside this version's scope.
 - Windows: .NET Framework 4 compiler. PowerShell execution policy does not need changing.
@@ -76,7 +87,7 @@ DRM, closed players, inaccessible embeds, autoplay policy, OS focus rules, and r
 
 ## Local state and uninstall
 
-The automatic pairing token is a private bearer credential shared only with Interlude's pinned extension origin. Its installation-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. Print **only the directory** with:
+The automatic pairing token is a private bearer credential available to the local dashboard and Interlude's pinned extension origin. Its installation-specific directory lives under `%LOCALAPPDATA%/Interlude` on Windows, `~/Library/Application Support/Interlude` on macOS, or the user state directory on Linux. For a source installation, print **only the directory** with:
 
 ```sh
 node --input-type=module -e "import { stateDirectory } from './src/config.mjs'; console.log(stateDirectory());"

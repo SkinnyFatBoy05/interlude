@@ -10,6 +10,21 @@ test('POSIX hook commands quote spaces, apostrophes, and shell metacharacters li
   assert.equal(hookCommand('/usr/local/node', "/Users/O'Brien/$work;notes/hook.mjs", false), "'/usr/local/node' '/Users/O'\\''Brien/$work;notes/hook.mjs'");
 });
 
+test('bundled runtime hook commands are literal, idempotent and removable on both operating systems', () => {
+  for (const windows of [true, false]) {
+    const runtime = windows ? "C:\\Users\\O'Brien\\Interlude\\Interlude.exe" : "/Applications/O'Brien/Interlude.app/Contents/MacOS/Interlude";
+    const script = windows ? 'C:\\Interlude\\resources\\companion\\scripts\\hook.mjs' : '/Applications/Interlude.app/Contents/Resources/companion/scripts/hook.mjs';
+    const command = hookCommand(runtime, script, windows, { runAsNode: true });
+    assert.match(command, /ELECTRON_RUN_AS_NODE/);
+    const installed = mergeHooks({}, command);
+    assert.deepEqual(mergeHooks(installed, command), installed);
+    assert.deepEqual(mergeHooks(installed, command, true), { hooks: {} });
+    // Changing only the runtime path does not leave duplicate handlers behind.
+    const updated = hookCommand(runtime.replace("O'Brien", 'Updated'), script, windows, { runAsNode: true });
+    assert.deepEqual(mergeHooks(installed, updated, true), { hooks: {} });
+  }
+});
+
 test('hook command paths reject control characters and relative paths on each OS', () => {
   for (const windows of [true, false]) {
     const node = windows ? 'C:\\node.exe' : '/usr/bin/node';

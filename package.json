@@ -1,16 +1,24 @@
 {
   "name": "interlude",
-  "version": "0.3.1",
+  "version": "0.4.0",
+  "author": "SkinnyFatBoy05",
   "private": true,
   "license": "UNLICENSED",
   "description": "A local companion for the moments between Codex prompts.",
   "type": "module",
+  "main": "desktop/main.mjs",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "prestart": "node scripts/build-native.mjs",
     "start": "node src/server.mjs",
+    "desktop": "node scripts/prepare-desktop.mjs && electron .",
+    "desktop:prepare": "node scripts/prepare-desktop.mjs",
+    "desktop:pack": "node scripts/prepare-desktop.mjs && electron-builder --config desktop/builder.cjs --dir --publish never",
+    "desktop:dist": "node scripts/prepare-desktop.mjs && electron-builder --config desktop/builder.cjs --publish never",
+    "desktop:release": "node scripts/release-desktop.mjs",
+    "desktop:smoke": "node tests/desktop/smoke.mjs",
     "build:windows": "node scripts/build-windows.mjs",
     "build:macos": "node scripts/build-macos.mjs",
     "build:native": "node scripts/build-native.mjs",
@@ -28,6 +36,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3",
     "fflate": "0.8.3"
   }
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 — desktop release candidate
+
+- Add a sandboxed desktop app, Windows installer and macOS DMG/ZIP builds with a bundled hook runtime and compiled native helpers.
+- Add guided hook setup/removal, a computer-specific extension-folder shortcut, single-instance tray controls, optional launch at login and a manual updates link.
+- Save validated mode/playback preferences atomically; monitoring starts off and pauses on sleep or screen lock.
+- Keep one browser in control instead of repeatedly replacing healthy connections when multiple browsers reconnect.
+- Add packaged UI/runtime smoke checks and Windows, Apple Silicon and Intel build jobs; produce desktop SHA-256 checksums.
+- Keep public release gated on trusted signing/notarization, store review and interactive real-service/desktop acceptance. CI artifacts are unsigned test builds.
+
 ## 0.3.1 — private beta 2
 
 - Pair the browser extension with the local companion automatically; connection-code copying is no longer part of setup.

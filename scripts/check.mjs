@@ -5,10 +5,10 @@ async function* sources(folder) {
   for (const entry of await readdir(folder, { withFileTypes: true })) {
     const file = path.join(folder, entry.name);
     if (entry.isDirectory()) yield* sources(file);
-    else if (/\.(mjs|js)$/.test(entry.name)) yield file;
+    else if (/\.(mjs|js|cjs)$/.test(entry.name)) yield file;
   }
 }
-for (const folder of ['src', 'scripts', 'web', 'extension', 'tests']) {
+for (const folder of ['src', 'scripts', 'web', 'extension', 'tests', 'desktop']) {
   for await (const file of sources(folder)) {
     const result = spawnSync(process.execPath, ['--check', file], { stdio: 'inherit' });
     if (result.error) { console.error(result.error.message); process.exit(1); }

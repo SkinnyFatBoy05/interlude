@@ -6,11 +6,13 @@ import { zipSync } from 'fflate';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const SOURCE_ENTRIES = Object.freeze([
-  'src', 'web', 'extension', 'scripts', 'tests', '.github', '.gitignore', '.gitattributes',
+  'src', 'web', 'extension', 'scripts', 'tests', 'desktop', '.github', '.gitignore', '.gitattributes',
   'package.json', 'package-lock.json', 'playwright.config.mjs',
   'README.md', 'SECURITY.md', 'PRIVACY.md', 'CHANGELOG.md',
   'docs/platforms.md', 'docs/native-platforms.md', 'docs/backend-review.md', 'docs/release-verification.md',
   'docs/beta-testing.md',
+  'docs/production-plan.md',
+  'docs/desktop-release.md',
 ]);
 // ZIP's DOS timestamp stores local calendar components without a timezone.
 const fixedTime = new Date(2000, 0, 1, 0, 0, 0);

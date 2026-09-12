@@ -1,4 +1,6 @@
-# Interlude 0.3 private beta
+# Interlude beta testing
+
+For 0.4 desktop packages, start with [desktop setup](desktop-release.md); no terminal or compiler is needed on the tester's computer. The source workflow below remains supported. Public release still requires signing and interactive acceptance.
 
 This beta is for a small group of technical testers using local Codex desktop tasks with Chrome, Brave, or Edge. Windows and macOS are target platforms. macOS native code compiles in CI; interactive Mac behavior is still a beta test item. Safari, Firefox, remote/cloud sessions, phone apps, and native streaming apps are outside this beta.
 

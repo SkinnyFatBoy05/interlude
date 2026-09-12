@@ -52,6 +52,33 @@ test('a foreign extension origin cannot open the local bridge even with the toke
   });
 });
 test('extension clients cannot change settings', async t => { const app = await appFor(t); const extension = await client(app, 'extension'); extension.send(JSON.stringify({ type: 'settings', patch: { enabled: true } })); await delay(30); assert.equal(app.session.state.enabled, false); });
+
+test('desktop learning works without a media browser and is cancelled when disarmed', async t => {
+  let shown = 0;
+  const app = await appFor(t, { showLearning: async () => { shown++; return { ok: true }; } });
+  app.session.update({ enabled: true, mode: 'learn' });
+  await post(app, event('UserPromptSubmit'));
+  await delay(1500); assert.equal(shown, 1);
+  await post(app, event('UserPromptSubmit', { turn_id: 'turn-2' }));
+  app.disable(); await delay(1500); assert.equal(shown, 1);
+});
+
+test('a second browser cannot replace a healthy connection or steal its media commands', async t => {
+  const app = await appFor(t);
+  const first = await client(app, 'extension');
+  const second = new WebSocket(app.origin.replace('http:', 'ws:') + '/bridge', { origin: trustedExtensionOrigin });
+  await once(second, 'open');
+  t.after(() => second.terminate());
+  const closed = once(second, 'close', { signal: AbortSignal.timeout(3000) });
+  second.send(JSON.stringify({ type: 'hello', role: 'extension', token }));
+  assert.equal((await closed)[0], 1013);
+  assert.equal(first.readyState, WebSocket.OPEN);
+  const pong = waitMessage(first, message => message.type === 'pong');
+  first.send(JSON.stringify({ type: 'ping' })); await pong;
+  const gone = once(first, 'close'); first.close(); await gone;
+  const reconnected = await client(app, 'extension');
+  assert.equal(reconnected.readyState, WebSocket.OPEN);
+});
 test('demo events never dispatch desktop actions', async t => { let focus = 0; const app = await appFor(t, { nativeFocus: async () => { focus++; return { focused: true }; } }); const dashboard = await client(app, 'dashboard'); const started = waitMessage(dashboard, m => m.state?.demo?.status === 'running'); dashboard.send(JSON.stringify({ type: 'demo', action: 'start' })); await started; const finished = waitMessage(dashboard, m => m.state?.demo?.status === 'complete'); dashboard.send(JSON.stringify({ type: 'demo', action: 'complete' })); await finished; assert.equal(focus, 0); assert.equal(app.session.state.status, 'idle'); });
 test('return waits for video pause acknowledgement before native focus', async t => {
   let focused = false;

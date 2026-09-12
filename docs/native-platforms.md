@@ -4,7 +4,7 @@ Interlude supports best-effort return to the Codex desktop app on Windows and ma
 
 ## Build and diagnostics
 
-Requirements: Node.js 22 or later; Windows with the .NET Framework 4 compiler, or macOS with Xcode Command Line Tools and Swift. No PowerShell script execution policy changes are needed. Install the macOS tools with `xcode-select --install` if they are missing.
+Source requirements: Node.js 22.12 or later; Windows with the .NET Framework 4 compiler, or macOS 13+ with Xcode Command Line Tools and Swift. Desktop packages bundle the runtime and a precompiled helper. No PowerShell script execution policy changes are needed. Install the macOS development tools with `xcode-select --install` if they are missing.
 
 ```sh
 node scripts/build-native.mjs

@@ -166,7 +166,8 @@ async function connect() {
       ready = false; cancelCommands(); clearInterval(keepAlive); clearTimeout(handshake); socket = null;
       for (const pending of interrupted) enqueue(() => cancelTarget(pending.targetTabId, undefined, pending.action)).catch(() => {});
       if (event.code === 1008) chrome.storage.local.remove('token').catch(() => {});
-      lastMessage = event.code === 1008 ? 'Pairing expired. Reconnecting automatically…' : 'Companion offline. Start Interlude to reconnect, or release playback from this extension.';
+      lastMessage = event.code === 1013 ? 'Another browser is connected. Disconnect Interlude in that browser to switch here.'
+        : event.code === 1008 ? 'Pairing expired. Reconnecting automatically…' : 'Companion offline. Start Interlude to reconnect, or release playback from this extension.';
       clearTimeout(reconnect);
       reconnect = setTimeout(() => connect().catch(() => {}), event.code === 1008 ? 500 : 4000);
     };

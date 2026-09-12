@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { HOOKS } from '../src/events.mjs';
 import { ROOT, loadConfig } from '../src/config.mjs';
 
-export function hookCommand(nodePath = process.execPath, script = path.join(ROOT, 'scripts', 'hook.mjs'), windows = process.platform === 'win32') {
+export function hookCommand(nodePath = process.execPath, script = path.join(ROOT, 'scripts', 'hook.mjs'), windows = process.platform === 'win32', { runAsNode = false } = {}) {
   const pathAPI = windows ? path.win32 : path.posix;
   for (const value of [nodePath, script]) {
     if (typeof value !== 'string' || value.length > 32768 || /[\x00-\x1f\x7f]/.test(value) || !pathAPI.isAbsolute(value)) {
@@ -17,13 +17,19 @@ export function hookCommand(nodePath = process.execPath, script = path.join(ROOT
   // Codex uses PowerShell on Windows. Quote each literal path as PowerShell code.
   const quotePS = value => `'${value.replaceAll("'", "''")}'`;
   const quoteSH = value => "'" + value.replaceAll("'", "'\\''") + "'";
-  return windows ? `& ${quotePS(nodePath)} ${quotePS(script)}` : `${quoteSH(nodePath)} ${quoteSH(script)}`;
+  const command = windows ? `& ${quotePS(nodePath)} ${quotePS(script)}` : `${quoteSH(nodePath)} ${quoteSH(script)}`;
+  return (runAsNode ? windows ? "$env:ELECTRON_RUN_AS_NODE='1'; " : 'ELECTRON_RUN_AS_NODE=1 ' : '') + command;
 }
 
 // Recognize only the two literal arguments emitted by this installer (including v0.1).
 // Never execute or loosely search a shell command while deciding which handlers we own.
 function hookIdentity(command) {
   if (typeof command !== 'string') return null;
+  let runAsNode = false;
+  const original = command;
+  for (const prefix of ["$env:ELECTRON_RUN_AS_NODE='1'; ", 'ELECTRON_RUN_AS_NODE=1 ']) {
+    if (command.startsWith(prefix)) { runAsNode = true; command = command.slice(prefix.length); break; }
+  }
   const windows = command.startsWith('& ');
   let index = windows ? 2 : 0;
   const literal = () => {
@@ -44,8 +50,9 @@ function hookIdentity(command) {
   if (script === null || index !== command.length) return null;
   const paths = windows ? path.win32 : path.posix;
   const executable = paths.basename(nodePath);
-  if (!(windows ? /^(node|nodejs)\.exe$/i : /^(node|nodejs)$/).test(executable) || paths.basename(script) !== 'hook.mjs') return null;
-  try { if (hookCommand(nodePath, script, windows) !== command) return null; }
+  const validExecutable = runAsNode ? (windows ? /^(interlude|electron)\.exe$/i : /^(Interlude|Electron)$/) : (windows ? /^(node|nodejs)\.exe$/i : /^(node|nodejs)$/);
+  if (!validExecutable.test(executable) || paths.basename(script) !== 'hook.mjs') return null;
+  try { if (hookCommand(nodePath, script, windows, { runAsNode }) !== original) return null; }
   catch { return null; }
   const normalized = paths.normalize(script);
   return `${windows ? 'windows' : 'posix'}:${windows ? normalized.toLowerCase() : normalized}`;

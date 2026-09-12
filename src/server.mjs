@@ -10,6 +10,7 @@ import { Sessions } from './sessions.mjs';
 import { validEvent } from './events.mjs';
 import { projectLessons, activityLesson } from './lessons.mjs';
 import * as nativePlatform from './platform.mjs';
+import { Preferences } from './preferences.mjs';
 
 const WEB = path.join(ROOT, 'web');
 const files = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']]]);
@@ -30,12 +31,16 @@ async function bodyJson(req, limit = 16000) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw Object.assign(new Error('Invalid JSON.'), { status: 400 }); }
 }
 
-export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFocus = nativePlatform.focusCodex, nativeDiagnostics = nativePlatform.platformDiagnostics, heartbeatMs = 15000, commandTimeoutMs = 2200 } = {}) {
+export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFocus = nativePlatform.focusCodex, nativeDiagnostics = nativePlatform.platformDiagnostics, showLearning, heartbeatMs = 15000, commandTimeoutMs = 2200, preferencesDirectory = token === undefined ? stateDirectory(cwd) : null } = {}) {
   const config = token === undefined ? await loadConfig(stateDirectory(cwd), { legacyDirectory: path.join(cwd, '.local') }) : { token };
   const secret = config.token;
   if (typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid local pairing token.');
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid local port.');
   const session = new Sessions({ cwd });
+  const preferences = new Preferences(preferencesDirectory);
+  const saved = await preferences.load();
+  session.update(saved.settings);
+  if (saved.warning) session.note(saved.warning);
   if (config.migrationWarning) session.note(config.migrationWarning);
   const sockets = new Set();
   const awaiting = new Map();
@@ -67,7 +72,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   let actualPort = port;
   const origin = () => `http://127.0.0.1:${actualPort}`;
   const send = (ws, value) => { if (ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(value)); } catch { ws.terminate(); } } };
-  const snapshot = () => ({ ...session.state, browser, lessons: lessons.length ? lessons : [activityLesson], scope: cwd, platform: process.platform, version, diagnostics, demo: demo?.state ?? null });
+  const snapshot = () => ({ ...session.state, browser, lessons: lessons.length ? lessons : [activityLesson], scope: cwd, platform: process.platform, version, desktop: typeof showLearning === 'function', diagnostics, demo: demo?.state ?? null });
   const publish = () => { refreshLessons(); for (const ws of sockets) if (ws.role === 'dashboard') send(ws, { type: 'state', state: snapshot() }); };
 
   function syncActions() {
@@ -105,7 +110,11 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
     }
     if (item.type === 'handoff') {
       if (session.state.status !== 'running') return;
-      const result = await command(item.mode === 'fun' ? 'break' : 'learn', { resume: session.state.resume }, signal);
+      let result;
+      if (item.mode === 'learn' && showLearning) {
+        result = browser.selected ? await command('pause', {}, signal) : { ok: true };
+        if (result.ok && current()) result = await showLearning({ signal });
+      } else result = await command(item.mode === 'fun' ? 'break' : 'learn', { resume: session.state.resume }, signal);
       if (!current()) return;
       if (!result.ok) session.note(result.message || 'The browser could not switch tabs.');
     } else if (item.type === 'attention') {
@@ -214,15 +223,14 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         const role = req.headers.origin === origin() ? 'dashboard' : 'extension';
         if (message.type !== 'hello' || message.role !== role || !sameToken(message.token, secret)) { ws.close(1008, 'Pairing rejected'); return; }
         clearTimeout(authTimer);
-        ws.role = role;
         if (role === 'extension') {
-          if (extension && extension !== ws) {
-            for (const pending of awaiting.values()) if (pending.owner === extension) pending.resolve({ ok: false, message: 'Browser connection was replaced.' });
-            extension.close(1000, 'Replaced by a new connection');
-          }
+          // One owner at a time. Replacing a healthy browser causes competing
+          // service workers to steal the bridge back on every reconnect.
+          if (extension?.readyState === WebSocket.OPEN && extension !== ws) { ws.close(1013, 'Another browser is connected'); return; }
           extension = ws;
           browser = { ...emptyBrowser('Choose a supported media tab in the extension.'), connected: true };
         }
+        ws.role = role;
         send(ws, { type: 'ready' }); publish(); return;
       }
       if (message.type === 'ping') { send(ws, { type: 'pong' }); return; }
@@ -243,6 +251,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
       try {
         if (message.type === 'settings') {
           dispatch(session.update(message.patch));
+          preferences.save(session.state).catch(() => { if (!closing) { session.note('Preferences could not be saved. These settings apply until you quit.'); publish(); } });
           if (session.state.enabled && demo) { demo = null; clearInterval(demoTimer); }
           publish();
         }
@@ -323,6 +332,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   actualPort = server.address().port;
   return {
     origin: origin(), token: secret, session,
+    disable: () => { dispatch(session.update({ enabled: false })); publish(); },
     close: async () => {
       if (closing) return;
       closing = true; session.update({ enabled: false }); actionController.abort(); diagnosticsController?.abort();
@@ -331,6 +341,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
       for (const ws of sockets) ws.terminate();
       for (const item of awaiting.values()) item.resolve({ ok: false, cancelled: true });
       wss.close(); await new Promise(resolve => server.close(resolve));
+      await preferences.flush();
     },
   };
 }

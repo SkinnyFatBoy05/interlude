@@ -2,6 +2,7 @@ node_modules/
 .local/
 .tmp/
 artifacts/
+.desktop-build/
 *.log
 playwright-report/
 test-results/

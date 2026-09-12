@@ -12,6 +12,8 @@ let connecting = false;
 let diagnosticTimer;
 let diagnosticRequestedAt = 0;
 let bridgeReady = false;
+const desktop = window.interludeDesktop;
+let desktopState;
 const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'next', 'previous', 'reveal'];
 function connectionReady(ready) {
   bridgeReady = ready;
@@ -50,6 +52,7 @@ function render() {
   $('mode-description').textContent = learning ? 'Stay with your project. Learn the concepts behind the tools and files Codex is working with.' : 'Your video picks up while Codex works. We bring you back when it needs you.';
   const text = [...(copy[view.status] ?? copy.idle)];
   if (learning && view.status === 'running') { text[1] = 'Build your understanding.'; text[2] = 'Explore a concept from your project while Codex keeps working.'; }
+  if (learning && state.desktop && view.status === 'idle') text[2] = 'Connect Codex, then turn on Interlude. A media tab is optional in Locked-in mode.';
   if (view.status === 'idle' && state.enabled) { text[0] = 'Interlude is on'; text[2] = 'Send your next prompt in Codex. The handoff begins after a short pause.'; }
   $('status-label').textContent = text[0]; $('status-title').textContent = text[1]; $('status-description').textContent = text[2];
   $('status-panel').dataset.state = view.status;
@@ -114,7 +117,7 @@ function render() {
     for (const file of activity.files) { const code = document.createElement('code'); code.textContent = file; text.append(code); }
     row.append(time, text); $('activity').append(row);
   }
-  const notice = state.notice || (state.enabled && !state.browser.connected ? 'The browser is disconnected. Connect it before your next prompt.' : '');
+  const notice = state.notice || (state.enabled && !state.browser.connected && !(state.desktop && learning) ? 'The browser is disconnected. Connect it before your next prompt.' : '');
   $('notice').textContent = notice; $('notice').hidden = !notice;
   updateElapsed();
 }
@@ -146,7 +149,7 @@ async function connect() {
     };
     current.onclose = () => { if (socket !== current) return; socket = null; clearTimeout(diagnosticTimer); connectionReady(false); $('notice').textContent = 'Companion offline. Restart Interlude to reconnect.'; $('notice').hidden = false; clearTimeout(reconnect); reconnect = setTimeout(connect, 3000); };
     current.onerror = () => {};
-  } catch { $('notice').textContent = 'Could not connect. Start the companion with npm start.'; $('notice').hidden = false; clearTimeout(reconnect); reconnect = setTimeout(connect, 3000); }
+  } catch { $('notice').textContent = desktop ? 'Could not connect. Quit and reopen Interlude.' : 'Could not connect. Start the companion with npm start.'; $('notice').hidden = false; clearTimeout(reconnect); reconnect = setTimeout(connect, 3000); }
   finally { connecting = false; }
 }
 
@@ -154,7 +157,7 @@ $('fun-mode').addEventListener('click', () => send({ type: 'settings', patch: { 
 $('learn-mode').addEventListener('click', () => send({ type: 'settings', patch: { mode: 'learn' } }));
 $('toggle').addEventListener('click', () => {
   if (!state || !bridgeReady) return;
-  if (!state.enabled && !state.browser.connected) { $('setup-dialog').showModal(); toast('Connect the browser to enable automatic handoffs.'); return; }
+  if (!state.enabled && !state.browser.connected && !(state.desktop && state.mode === 'learn')) { $('setup-dialog').showModal(); toast('Connect the browser to enable automatic handoffs.'); return; }
   if (!state.enabled && state.mode === 'fun' && !state.browser.selected) { toast('Choose a media tab in the Interlude extension first.'); return; }
   if (!state.enabled && state.mode === 'fun' && !state.browser.mediaReady) { toast(state.browser.message || 'Open a playable video or audio item in your selected tab first.'); return; }
   send({ type: 'settings', patch: { enabled: !state.enabled } });
@@ -184,5 +187,33 @@ $('reveal').addEventListener('click', () => { revealed = !revealed; render(); })
 $('next').addEventListener('click', () => { if (state.lessons.length) concept = (concept + 1) % state.lessons.length; render(); });
 $('previous').addEventListener('click', () => { if (state.lessons.length) concept = (concept + state.lessons.length - 1) % state.lessons.length; render(); });
 setInterval(updateElapsed, 1000);
+function renderDesktop(value) {
+  desktopState = value;
+  $('desktop-settings').hidden = false;
+  $('desktop-hook-setup').hidden = false;
+  $('source-hook-setup').hidden = true;
+  $('open-extension-folder').hidden = false;
+  $('extension-path').textContent = value.extensionPath;
+  $('launch-at-login').checked = value.openAtLogin;
+  $('launch-at-login').disabled = !value.packaged;
+  $('install-desktop-hooks').textContent = value.hooksInstalled ? 'Reconnect Codex' : 'Connect Codex';
+  $('remove-desktop-hooks').hidden = !value.hooksInstalled;
+  $('desktop-setup-status').textContent = value.hooksInstalled ? 'Hooks installed. Review and trust them in Codex /hooks.' : 'Connect to install the passive event hooks. Your existing hooks are preserved.';
+}
+async function desktopAction(method, value) {
+  const buttons = ['install-desktop-hooks', 'remove-desktop-hooks', 'open-extension-folder', 'check-updates'];
+  buttons.forEach(id => $(id).disabled = true);
+  try { renderDesktop(await desktop[method](value)); }
+  catch (error) { toast(error.message || 'Desktop setup could not finish.'); if (desktopState) $('launch-at-login').checked = desktopState.openAtLogin; }
+  finally { buttons.forEach(id => $(id).disabled = false); }
+}
+if (desktop) {
+  desktop.status().then(renderDesktop).catch(() => toast('Codex setup could not be read. Check your hooks configuration.'));
+  $('install-desktop-hooks').addEventListener('click', () => desktopAction('installHooks'));
+  $('remove-desktop-hooks').addEventListener('click', () => desktopAction('removeHooks'));
+  $('open-extension-folder').addEventListener('click', () => desktopAction('openExtension'));
+  $('launch-at-login').addEventListener('change', () => desktopAction('setLogin', $('launch-at-login').checked));
+  $('check-updates').addEventListener('click', () => desktopAction('updates'));
+}
 connectionReady(false);
 connect();

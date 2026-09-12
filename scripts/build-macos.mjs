@@ -12,10 +12,10 @@ export async function prepareMacOSHelper({ signal, force = false } = {}) {
   signal?.throwIfAborted();
   const source = path.join(root, 'scripts', 'FocusCodex.swift');
   return buildNativeHelper({ source, directory: path.join(root, '.local', 'bin'), name: 'InterludeFocus-macos',
-    buildKey: `macos-swift5-v2-snapshot-${process.arch}`, signal, force, format: 'mach-o', executable: true,
+    buildKey: `macos-swift5-v3-macos13-${process.arch}`, signal, force, format: 'mach-o', executable: true,
     compile: async (destination, buildSignal, snapshot) => {
       try {
-        await execute('/usr/bin/xcrun', ['swiftc', '-swift-version', '5', '-O', '-framework', 'AppKit', '-framework', 'ApplicationServices', snapshot, '-o', destination],
+        await execute('/usr/bin/xcrun', ['swiftc', '-swift-version', '5', '-target', `${process.arch === 'arm64' ? 'arm64' : 'x86_64'}-apple-macos13.0`, '-O', '-framework', 'AppKit', '-framework', 'ApplicationServices', snapshot, '-o', destination],
           { timeout: 60000, maxBuffer: 16000, signal: buildSignal });
       } catch (error) { throw new Error(`Could not build the macOS helper. Install Xcode Command Line Tools: ${error.stderr?.trim() || error.message}`); }
     }

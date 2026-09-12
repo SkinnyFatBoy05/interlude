@@ -157,7 +157,7 @@ main {
   justify-content: space-between;
   gap: 20px;
   border: 1px solid var(--accent);
-  background: #101400;
+  background: #0c0c0c;
 }
 
 .demo-banner div {
@@ -206,7 +206,7 @@ main {
 h1 {
   margin: 0;
   max-width: 680px;
-  font-size: clamp(42px, 5.4vw, 76px);
+  font-size: clamp(38px, 4.2vw, 64px);
   font-weight: 620;
   line-height: .98;
   letter-spacing: -.055em;
@@ -272,8 +272,8 @@ h1 {
 }
 
 .status-panel {
-  min-height: 360px;
-  padding: clamp(24px, 3.2vw, 42px);
+  min-height: 280px;
+  padding: clamp(24px, 2.4vw, 34px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(205px, 260px);
   gap: clamp(28px, 4vw, 58px);
@@ -284,12 +284,14 @@ h1 {
 
 .status-panel[data-state="running"] {
   border-color: var(--accent);
-  background: #0c0f05;
+  background: #080808;
 }
+
+.status-panel:has(.task-rail[hidden]) { grid-template-columns: 1fr; }
 
 .status-panel.attention {
   border-color: var(--attention);
-  background: #111006;
+  background: #080808;
 }
 
 .status-panel[data-state="disconnected"],
@@ -343,7 +345,7 @@ h1 {
 .status-panel h2 {
   margin: auto 0 16px;
   max-width: 720px;
-  font-size: clamp(36px, 4.6vw, 65px);
+  font-size: clamp(32px, 3.4vw, 48px);
   font-weight: 570;
   line-height: 1;
   letter-spacing: -.05em;
@@ -852,7 +854,7 @@ dialog hr {
   }
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1380px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
@@ -1018,3 +1020,6 @@ dialog hr {
     transition: none !important;
   }
 }
+/* Desktop setup shares the dashboard's existing black and acid palette. */
+.desktop-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+#open-extension-folder { margin-top: 10px; }

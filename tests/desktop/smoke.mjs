@@ -75,6 +75,9 @@ try {
   await page.getByRole('button', { name: 'Close setup', exact: true }).click();
   await page.getByRole('button', { name: 'Locked-in mode', exact: true }).click();
   await expect(page.locator('#lesson')).toBeVisible();
+  await page.getByText('Connection details', { exact: true }).click();
+  await page.getByRole('button', { name: 'Copy debug summary', exact: true }).click();
+  await expect(page.locator('#support-status')).toContainText('Copied.');
   const output = path.join(ROOT, 'artifacts', 'desktop-qa'); await mkdir(output, { recursive: true });
   await page.screenshot({ path: path.join(output, executablePath ? 'packaged.png' : 'development.png') });
   assert.deepEqual(errors, []);

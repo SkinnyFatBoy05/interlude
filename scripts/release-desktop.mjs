@@ -10,6 +10,6 @@ if (process.platform === 'darwin') {
 }
 const result = spawnSync(process.execPath, [path.join(ROOT, 'node_modules', 'electron-builder', 'cli.js'), '--config', 'desktop/builder.cjs',
   '--config.forceCodeSigning=true', ...(process.platform === 'darwin' ? ['--config.mac.notarize=true'] : []), '--publish', 'never'],
-{ cwd: ROOT, stdio: 'inherit', windowsHide: true, env: process.env });
+{ cwd: ROOT, stdio: 'inherit', windowsHide: true, env: { ...process.env, INTERLUDE_SIGNED_RELEASE: '1' } });
 if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;

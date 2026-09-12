@@ -180,7 +180,11 @@ $('return').addEventListener('click', () => send({ type: 'return' }));
 $('acknowledge').addEventListener('click', () => send({ type: 'acknowledge' }));
 $('copy-support').addEventListener('click', async () => {
   if (!state) return;
-  try { await navigator.clipboard.writeText(JSON.stringify(supportSummary(state), null, 2)); $('support-status').textContent = 'Copied. No pairing code, project paths, tab titles, prompts, or chat IDs are included.'; }
+  try {
+    if (desktop) await desktop.copySupport();
+    else await navigator.clipboard.writeText(JSON.stringify(supportSummary(state), null, 2));
+    $('support-status').textContent = 'Copied. No pairing code, project paths, tab titles, prompts, or chat IDs are included.';
+  }
   catch { $('support-status').textContent = 'Clipboard access was denied. Try opening Interlude in your browser.'; }
 });
 $('reveal').addEventListener('click', () => { revealed = !revealed; render(); });

@@ -1,3 +1,4 @@
+const signedRelease = process.env.INTERLUDE_SIGNED_RELEASE === '1';
 module.exports = {
   appId: 'com.skinnyfatboy05.interlude', productName: 'Interlude',
   directories: { output: 'artifacts/desktop', buildResources: '.desktop-build' },
@@ -17,7 +18,9 @@ module.exports = {
   nsis: { oneClick: false, perMachine: false, allowElevation: false, allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true, include: 'desktop/installer.nsh', deleteAppDataOnUninstall: false },
   mac: { target: ['dmg', 'zip'], icon: '.desktop-build/icon.png', category: 'public.app-category.productivity', minimumSystemVersion: '13.0',
-    hardenedRuntime: true, entitlements: 'desktop/entitlements.mac.plist', entitlementsInherit: 'desktop/entitlements.mac.plist',
+    identity: signedRelease ? undefined : '-', hardenedRuntime: signedRelease,
+    notarize: signedRelease ? undefined : false,
+    entitlements: 'desktop/entitlements.mac.plist', entitlementsInherit: 'desktop/entitlements.mac.plist',
     binaries: ['Contents/Resources/native/InterludeFocus'] },
   dmg: { sign: true },
   publish: null,

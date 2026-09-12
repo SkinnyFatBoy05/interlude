@@ -11,6 +11,7 @@ import { validEvent } from './events.mjs';
 import { projectLessons, activityLesson } from './lessons.mjs';
 import * as nativePlatform from './platform.mjs';
 import { Preferences } from './preferences.mjs';
+import { supportSummary } from './support.mjs';
 
 const WEB = path.join(ROOT, 'web');
 const files = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']]]);
@@ -332,6 +333,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   actualPort = server.address().port;
   return {
     origin: origin(), token: secret, session,
+    support: () => supportSummary(snapshot()),
     disable: () => { dispatch(session.update({ enabled: false })); publish(); },
     close: async () => {
       if (closing) return;

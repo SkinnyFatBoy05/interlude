@@ -36,7 +36,7 @@ Build on the target OS/architecture: Swift helper builds match the machine's arc
 
 ## Public release gates
 
-Current CI builds are unsigned release candidates. A production release must additionally complete these checks:
+Current CI builds are release candidates without a trusted publisher signature. Windows builds are unsigned. Mac test bundles receive an ad-hoc signature after Electron's binaries are modified; their hardened runtime is off because ad-hoc binaries have no common signing team. The public `desktop:release` path enables hardened runtime, requires a real signing identity, and requires notarization. A production release must additionally complete these checks:
 
 - Configure the owner's Windows signing identity and Apple Developer ID/notarization credentials in the release environment. Run `npm run desktop:release` on each native runner; this requires signing and, on macOS, notarization. Do not commit certificates or passwords. Builder reads `CSC_LINK`/`CSC_KEY_PASSWORD` and Apple's supported notarization credentials. See [v26 signing troubleshooting](https://www.electron.build/v26/docs/troubleshooting/) and [notarization](https://www.electron.build/v26/docs/notarization/).
 - Verify Windows Authenticode status, macOS `codesign --verify --deep --strict`, `spctl --assess`, and `xcrun stapler validate`; then repeat install, upgrade, hook execution and uninstall on clean machines. Unsigned CI runs cannot certify these steps.

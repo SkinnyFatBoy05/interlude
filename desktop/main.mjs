@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell, dialog, powerMonitor } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell, dialog, powerMonitor, clipboard } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -79,6 +79,7 @@ async function initialize() {
     if (!trustedDesktopSender(event, window, companion.origin)) throw new Error('Untrusted desktop request.');
     validateDesktopAction(action, value);
     if (action === 'quit') { setImmediate(() => shutdown().catch(() => app.exit(1))); return; }
+    if (action === 'copy-support') { clipboard.writeText(JSON.stringify(companion.support(), null, 2)); return; }
     if (action === 'status') return status();
     if (setupBusy) throw new Error('Setup is already running. Wait for it to finish.');
     setupBusy = true;

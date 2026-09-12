@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('interludeDesktop', Object.freeze({
   setLogin: enabled => ipcRenderer.invoke('interlude-desktop', 'login', enabled),
   updates: () => ipcRenderer.invoke('interlude-desktop', 'updates'),
   quit: () => ipcRenderer.invoke('interlude-desktop', 'quit'),
+  copySupport: () => ipcRenderer.invoke('interlude-desktop', 'copy-support'),
 }));

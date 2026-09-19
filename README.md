@@ -6,7 +6,7 @@ Interlude connects Claude and Codex task surfaces with one media tab in Chrome, 
 
 **0.5 integration preview:** Claude/Codex website monitoring, local Claude Code hooks, and an opt-in Claude Chat/Cowork accessibility observer are available for testing. Start with [assistant integrations](docs/assistant-integrations.md) for the exact setup and verification limits. These new UI adapters are not yet certified against live signed-in services.
 
-**Invited tester?** Use the [15-minute tester guide](docs/tester-start.md) and [feedback template](docs/tester-feedback.md). The [private distribution guide](docs/beta-distribution.md) explains how to assemble and send the four platform-specific kits from the verified build.
+**Trying the beta?** Download the matching ZIP from [v0.5.0 Beta 1](https://github.com/SkinnyFatBoy05/interlude/releases/tag/v0.5.0-beta.1), then open START-HERE.txt. The [15-minute tester guide](docs/tester-start.md), [feedback template](docs/tester-feedback.md) and [distribution guide](docs/beta-distribution.md) cover setup, limitations and the four platform-specific kits. These public downloads are experimental testing builds.
 
 - **Fun mode:** switches to your chosen media tab while the watched assistant works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to the assistant.
 - **Locked-in mode:** shows short lessons based on dependencies declared in your project's `package.json`, with evidence and questions. Observed tool events explain what changed.

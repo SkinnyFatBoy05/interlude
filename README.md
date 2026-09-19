@@ -6,6 +6,8 @@ Interlude connects Claude and Codex task surfaces with one media tab in Chrome, 
 
 **0.5 integration preview:** Claude/Codex website monitoring, local Claude Code hooks, and an opt-in Claude Chat/Cowork accessibility observer are available for testing. Start with [assistant integrations](docs/assistant-integrations.md) for the exact setup and verification limits. These new UI adapters are not yet certified against live signed-in services.
 
+**Invited tester?** Use the [15-minute tester guide](docs/tester-start.md) and [feedback template](docs/tester-feedback.md). The [private distribution guide](docs/beta-distribution.md) explains how to assemble and send the four platform-specific kits from the verified build.
+
 - **Fun mode:** switches to your chosen media tab while the watched assistant works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to the assistant.
 - **Locked-in mode:** shows short lessons based on dependencies declared in your project's `package.json`, with evidence and questions. Observed tool events explain what changed.
 
@@ -26,7 +28,7 @@ Closing the window keeps the app in the tray/menu bar. Quit from that menu to st
 
 - Node.js 22.12 or newer; Node 24 recommended.
 - Codex desktop with lifecycle hooks, plus its CLI for reviewing hook trust.
-- Chrome, Brave, or Edge with Chromium 116 or later. Safari, Firefox, phone apps, and native entertainment apps are outside this version's scope.
+- Chrome, Brave, or Edge with Chromium 120 or later. Safari, Firefox, phone apps, and native entertainment apps are outside this version's scope.
 - Windows: .NET Framework 4 compiler. PowerShell execution policy does not need changing.
 - macOS: Xcode Command Line Tools with Swift. Install them with `xcode-select --install` if needed.
 
@@ -104,6 +106,8 @@ npm run hooks:remove
 ```
 
 Remove the extension and stop the companion. Remove hooks before moving or deleting the project. No startup service, scheduled task, registry change, or cloud resource is installed. See [Privacy](PRIVACY.md) and [Security](SECURITY.md).
+
+If you also connected Claude Code, run `npm run hooks:claude:remove` before moving/deleting that source installation. Installed desktop users use each provider's Disconnect button before uninstalling. Turn website monitoring off separately in the extension.
 
 ## Development and verification
 

@@ -1,5 +1,7 @@
 # Interlude beta testing
 
+Invited friends should start with the [15-minute tester guide](tester-start.md) and return the [feedback template](tester-feedback.md). The owner can assemble ready-to-send packages using the [private distribution guide](beta-distribution.md). The detailed source-development checks below remain available for technical testers.
+
 For desktop packages, start with [desktop setup](desktop-release.md); no terminal or compiler is needed on the tester's computer. The source workflow below remains supported. Public release still requires signing and interactive acceptance.
 
 This beta is for a small group of technical testers using Chrome, Brave, or Edge on Windows or macOS. The 0.5 integration preview adds Claude Code hooks, watched Claude/Codex website task tabs, and experimental ordinary Claude desktop Chat/Cowork observation. Follow [assistant integrations](assistant-integrations.md) for setup and the surface-specific acceptance checklist. Remote tasks require their website tab to remain open; local hooks do not monitor remote sessions. Safari, Firefox, phone apps, and native streaming apps are outside this beta. Interactive Mac behavior still needs actual hardware acceptance.
@@ -55,7 +57,7 @@ Stop testing and turn off Interlude for unexpected playback, wrong-window action
 
 Stop the companion before replacing its files. Run `npm ci` again, start it, reload the unpacked extension and media page, select the tab again, and run Check setup. Pairing remains in local user app data. Moving the installation requires removing the old hooks before installing from the new folder.
 
-To roll back, stop the companion and restore the previous source/extension together. To uninstall, turn off Interlude, run `npm run hooks:remove`, remove the extension, and stop the terminal process. The README explains how to remove the private pairing file. Other Codex hooks are preserved.
+To roll back, stop the companion and restore the previous source/extension together. To uninstall, turn off website and desktop monitoring, run `npm run hooks:remove` and/or `npm run hooks:claude:remove` for the providers you connected, remove the extension, and stop the terminal process. Installed desktop users use the corresponding Disconnect buttons. The README explains how to remove the private pairing file. Other providers' settings/hooks are preserved.
 
 ## Release boundary
 

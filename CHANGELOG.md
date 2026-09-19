@@ -2,6 +2,7 @@
 
 ## 0.5.0 — assistant integration preview
 
+- Provide four private tester kits from the pinned, verified CI build, with checksum validation, a 15-minute guide, blank feedback form and recovery/uninstall instructions. Keep live acceptance unverified until testers return evidence.
 - Add standalone, opt-in Claude chat, Claude Code web and Codex web task monitoring in the Chromium extension, with exact-tab return and general Locked-in lessons.
 - Add passive Claude Code hook setup/removal, prompt-ID isolation, permission/result correlation and provider-specific native return; preserve existing Codex integration and unrelated hook settings.
 - Add an experimental opt-in Claude desktop Chat/Cowork accessibility observer for Windows/macOS. Hidden chats are not tracked; inaccessible or unknown task state pauses playback without claiming completion.

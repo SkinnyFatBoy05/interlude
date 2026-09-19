@@ -14,6 +14,7 @@ export const SOURCE_ENTRIES = Object.freeze([
   'docs/production-plan.md',
   'docs/desktop-release.md',
   'docs/assistant-integrations.md',
+  'docs/tester-start.md', 'docs/tester-feedback.md', 'docs/tester-invite.txt', 'docs/beta-build.json', 'docs/beta-distribution.md',
 ]);
 // ZIP's DOS timestamp stores local calendar components without a timezone.
 const fixedTime = new Date(2000, 0, 1, 0, 0, 0);

@@ -18,4 +18,6 @@ Local state is protected by your OS account and filesystem permissions; it is no
 
 To remove access, disconnect the extension, stop the companion, and remove this installation's connection state using the location described in the setup documentation. Restarting creates a new token; the extension pairs automatically unless you explicitly disconnected it. Remove passive hooks using Disconnect Codex in the desktop app, or `npm run hooks:remove` for source installations. Disable Launch at login and remove the browser extension when uninstalling Interlude.
 
+For Claude Code, use Disconnect Claude Code or `npm run hooks:claude:remove` as well. Disable Observe Claude Chat/Cowork to end desktop observation. Website monitoring is independent of companion pairing: turn it off in the extension or remove the extension to stop that mode.
+
 Source bundles use an explicit allowlist and exclude runtime state, credentials, local activation history, dependencies, browser profiles, and test artifacts. Desktop installers additionally include the Electron runtime, its license notices, the production WebSocket dependency, and the compiled native helper; they do not include your local state.

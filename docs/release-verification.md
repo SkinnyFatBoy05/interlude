@@ -4,6 +4,10 @@ This record distinguishes implementation and automated tests from tests on real 
 
 ## 0.5.0 assistant integration preview — 2026-09-19
 
+The runtime commit `4da4458323308d8f073ffaa96d4bb49e1fde5f9e` passed [all ten CI jobs](https://github.com/SkinnyFatBoy05/interlude/actions/runs/35431131647), including packaged Windows x64, macOS ARM64 and macOS Intel smoke checks. Private tester kits reuse those exact binaries and extension bytes. Their separate packaging checks validate the pinned run, every required job, artifact checksums, version/inventory, unsafe paths, tamper rejection and exclusion of neighboring private files. All four assembled ZIPs were reopened and every contained file checked against its SHA-256 record. No runtime behavior was changed during tester-kit preparation.
+
+The [tester guide](tester-start.md), blank [feedback form](tester-feedback.md), recovery/uninstall instructions and [distribution guide](beta-distribution.md) accompany the kits. They are ready for a small guided compatibility test; live acceptance results remain unfilled. Desktop installer checksums establish file integrity, not publisher signing or clean-machine installation success.
+
 Added standalone Claude chat, Claude Code web and Codex web observation in the extension, passive local Claude Code hooks, provider-aware native return, and opt-in Windows/macOS accessibility observation for ordinary Claude Chat/Cowork. Setup and limitations are in [assistant integrations](assistant-integrations.md).
 
 Local Windows checks passed JavaScript/manifest validation and the 202-case unit suite (200 passed, two filesystem skips). All five required Chromium tests passed; the separate recording test is opt-in. The website test uses an actual MV3 extension and controlled pages at the three supported task URL shapes, with no companion connection. It verifies start → approval pause → resume → stable completion pause → originating-tab return and the bundled learning page. These pages simulate the semantic controls; they are not real signed-in Claude/Codex sessions.

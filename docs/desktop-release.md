@@ -2,11 +2,13 @@
 
 ## Install and connect
 
-Interlude 0.4 packages a local desktop app for Windows 10/11 x64, macOS Apple Silicon and macOS Intel. macOS 13 or newer is required by [Electron 44](https://www.electronjs.org/blog/electron-44-0); the Swift helper is also compiled with a macOS 13 deployment target. The installer includes Electron's runtime, the dashboard, the compiled native return helper, and the browser extension. Node and compiler requirements apply only to source development.
+Interlude 0.5 packages a local desktop app for Windows 10/11 x64, macOS Apple Silicon and macOS Intel. macOS 13 or newer is required by [Electron 44](https://www.electronjs.org/blog/electron-44-0); the Swift helper is also compiled with a macOS 13 deployment target. The installer includes Electron's runtime, the dashboard, the compiled native return helper, and the browser extension. Node and compiler requirements apply only to source development. Invited testers can use the [tester guide](tester-start.md); Claude/Codex website mode only needs the extension.
 
 Quit any older terminal companion first. On Windows run the installer; on macOS copy Interlude from the DMG into Applications before connecting Codex. Keep that install location stable. Open **Connect browser**, use **Open extension folder**, and load that folder in Brave/Chrome/Edge with Developer mode. Choose your media tab in the extension. Click **Connect Codex** in the app, review the handlers in Codex `/hooks`, then start a new task. Browser-store installation is a remaining distribution step.
 
 Only one browser owns media controls. Disconnect the extension in the current browser before connecting another. A second browser cannot steal a healthy connection. The app starts with monitoring off; settings are retained, but tasks and playback ownership are not restored. Sleep or screen lock turns monitoring off. Re-enable it when you return.
+
+Claude Code setup is under **Claude desktop → Connect Claude Code**. Ordinary Chat/Cowork uses the separate opt-in observer there while monitoring is off. See [assistant integrations](assistant-integrations.md) for its experimental, selected-task-only behavior. Keep website monitoring off when using desktop handoffs.
 
 Closing the dashboard leaves the tray/menu-bar app running. **Quit Interlude** ends monitoring and releases the playback guard without starting media. Launch at login is an explicit preference. The app links to the repository's release page for manual downloads; no background download or automatic update is implemented.
 
@@ -14,9 +16,9 @@ Closing the dashboard leaves the tray/menu-bar app running. **Quit Interlude** e
 
 Locked-in mode opens the desktop learning view. If you have a selected media tab it pauses first; you can also use this mode with no media browser connected.
 
-Quit Interlude before installing an update. Install into the same location to retain preferences and hook identity. Reload the browser extension after upgrading. If moving the app, first use **Disconnect Codex**, move it, then reconnect. If migrating from source, run `npm run hooks:remove` in the old source installation before connecting the desktop app; unrelated/source-installation handlers are deliberately not removed automatically.
+Quit Interlude before installing an update. Install into the same location to retain preferences and hook identity. Reload the browser extension after upgrading. If moving the app, first use **Disconnect Codex** and/or **Disconnect Claude Code** for the providers you connected, move it, then reconnect. If migrating from source, run `npm run hooks:remove` and/or `npm run hooks:claude:remove` in the old source installation before connecting the desktop app; unrelated/source-installation handlers are deliberately not removed automatically.
 
-Windows uninstall attempts to remove only that installation's passive hooks and preserves other Codex handlers and user data. On macOS, use **Disconnect Codex**, disable **Launch at login**, quit the app, then move it to Trash. Remove the extension from each browser. To reset preferences/pairing, stop the app and remove only this installation's directory under the Interlude OS app-data folder. Do not delete another installation's state or share pairing files.
+Windows uninstall attempts to remove only that installation's passive hooks and preserves other handlers and user data. On macOS, disconnect each provider you connected, disable **Launch at login**, quit the app, then move it to Trash. Remove the extension from each browser. To reset preferences/pairing, stop the app and remove only this installation's directory under the Interlude OS app-data folder. Do not delete another installation's state or share pairing files.
 
 ## Build and verify
 

@@ -12,22 +12,29 @@ body:
     validations:
       required: true
   - type: textarea
+    id: surface
+    attributes:
+      label: Assistant and interface
+      description: Claude or Codex? Website, desktop Code, ordinary Chat, or Cowork? Include app version if visible and Interlude build/version.
+    validations:
+      required: true
+  - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Include whether multiple Codex chats or monitors were involved.
+      description: Include website/desktop monitoring mode, multiple tasks, assistant windows and monitors.
     validations:
       required: true
   - type: textarea
     id: result
     attributes:
       label: Expected and actual behavior
-      description: Did media really pause? Did Codex come forward or request taskbar attention?
+      description: Did media and sound really pause? Did the correct assistant tab/window come forward or request taskbar attention?
     validations:
       required: true
   - type: textarea
     id: diagnostics
     attributes:
       label: Debug summary
-      description: Use Connection details → Check setup → Copy debug summary.
+      description: Desktop users can use Connection details → Check setup → Copy debug summary. Website-only users can copy the website status text. Exclude private conversation content.
       render: json

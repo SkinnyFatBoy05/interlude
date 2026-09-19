@@ -1,0 +1,7 @@
+I'm testing Interlude, a small tool that switches to a video while Claude or Codex works, then pauses it and brings you back when your attention is needed. It also has a learning mode.
+
+Could you try the attached private preview for about 15 minutes? Extract the ZIP and open START-HERE.txt. Website mode only needs the included browser extension; desktop mode needs the app for your operating system. Use a current Chrome, Brave or Edge and start with YouTube.
+
+This is an experimental compatibility test. The automated checks pass, but real website/Claude Chat/Cowork detection and clean-machine installation still need testing. Desktop builds are unsigned/not notarized and your computer may block them; don't disable security protections. Website mode is available without the desktop app.
+
+Please fill in FEEDBACK.txt and send it back to me. Stop and use the recovery steps if playback or window switching behaves unexpectedly. Use a harmless task and leave private prompts, credentials and screenshots of conversations out of your report. Thanks!

@@ -1,0 +1,24 @@
+{
+  "version": "0.5.0",
+  "repository": "SkinnyFatBoy05/interlude",
+  "runId": 35431131647,
+  "commit": "4da4458323308d8f073ffaa96d4bb49e1fde5f9e",
+  "requiredJobs": [
+    "Chromium extension and dashboard",
+    "Desktop / macos-latest",
+    "Desktop / macos-15-intel",
+    "Desktop / windows-latest",
+    "windows-latest / Node 22",
+    "windows-latest / Node 24",
+    "macos-latest / Node 22",
+    "macos-latest / Node 24",
+    "ubuntu-latest / Node 22",
+    "ubuntu-latest / Node 24"
+  ],
+  "sourceArtifact": "interlude-Linux-X64",
+  "desktopArtifacts": [
+    { "target": "windows-x64", "artifact": "interlude-desktop-Windows-X64", "file": "Interlude-0.5.0-win-x64.exe" },
+    { "target": "mac-arm64", "artifact": "interlude-desktop-macOS-ARM64", "file": "Interlude-0.5.0-mac-arm64.dmg" },
+    { "target": "mac-x64", "artifact": "interlude-desktop-macOS-X64", "file": "Interlude-0.5.0-mac-x64.dmg" }
+  ]
+}

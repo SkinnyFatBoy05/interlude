@@ -27,6 +27,7 @@
     "check": "node scripts/check.mjs",
     "test:e2e": "playwright test",
     "package:release": "node scripts/package-release.mjs",
+    "package:beta": "node scripts/package-beta.mjs",
     "hooks:preview": "node scripts/install-hooks.mjs --preview",
     "hooks:install": "node scripts/install-hooks.mjs --install",
     "hooks:remove": "node scripts/install-hooks.mjs --remove",

@@ -5,7 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { WebSocket } from 'ws';
 import { createCompanion, sameToken } from '../src/server.mjs';
 import { ROOT } from '../src/config.mjs';
-import { sanitizeHook } from '../src/events.mjs';
+import { sanitizeHook, sanitizeClaudeHook } from '../src/events.mjs';
 
 const token = 'a'.repeat(64);
 const trustedExtensionOrigin = 'chrome-extension://ppfnbagemmijocfmjepgkfljddnkcghn';
@@ -27,6 +27,39 @@ async function post(app, event, auth = token, headers = {}) {
 function event(name, fields = {}) { return sanitizeHook({ hook_event_name: name, session_id: 'integration', turn_id: 'turn-1', cwd: ROOT, tool_name: 'Bash', tool_input: {}, ...fields }); }
 
 test('token comparisons safely reject different byte lengths', () => { assert.equal(sameToken('é'.repeat(64), token), false); assert.equal(sameToken(undefined, token), false); assert.equal(sameToken(token, token), true); });
+
+test('Claude completion routes native return to Claude, after browser pause confirmation', async t => {
+  const targets = [];
+  const app = await appFor(t, { nativeFocus: async options => { targets.push(options.provider); return { focused: true }; } });
+  const extension = await client(app, 'extension'); app.session.update({ enabled: true });
+  const hook = name => sanitizeClaudeHook({ session_id: 'claude-route', cwd: ROOT, hook_event_name: name });
+  await post(app, hook('UserPromptSubmit'));
+  const paused = waitMessage(extension, m => m.type === 'command' && m.action === 'pause');
+  await post(app, hook('Stop')); const command = await paused;
+  assert.deepEqual(targets, []); extension.send(JSON.stringify({ type: 'ack', id: command.id, ok: true }));
+  await delay(100); assert.deepEqual(targets, ['claude']);
+});
+
+test('website ownership prevents native desktop handoffs and refuses competing enable', async t => {
+  let focused = false; const app = await appFor(t, { nativeFocus: async () => { focused = true; return { focused: true }; } });
+  const extension = await client(app, 'extension'), dashboard = await client(app, 'dashboard');
+  app.session.update({ enabled: true });
+  extension.send(JSON.stringify({ type: 'browser', webMonitoring: true })); await delay(80);
+  assert.equal(app.session.state.enabled, false);
+  const rejected = waitMessage(dashboard, m => m.type === 'error'); dashboard.send(JSON.stringify({ type: 'settings', patch: { enabled: true } }));
+  assert.match((await rejected).message, /website monitoring/); assert.equal(focused, false);
+});
+
+test('Claude desktop observer is opt-in, ignored hooks cannot duplicate UI sessions, and disarm stops observation', async t => {
+  let calls = 0;
+  const app = await appFor(t, { nativeObserve: async () => { calls++; return { message: 'fixture', observation: { available: true, window: '100', working: true, attention: false, completed: false, failed: false, copies: 0, composer: true } }; } });
+  const dashboard = await client(app, 'dashboard');
+  dashboard.send(JSON.stringify({ type: 'claude-observer', enabled: true })); await delay(60);
+  await post(app, sanitizeClaudeHook({ session_id: 'ignored', cwd: ROOT, hook_event_name: 'UserPromptSubmit' }));
+  assert.equal(app.session.state.sessionCount, 0); assert.equal(calls, 0);
+  app.session.update({ enabled: true }); await delay(1550); assert.ok(calls > 0); assert.equal(app.session.state.surface, 'desktop-ui');
+  app.disable(); const before = calls; await delay(1550); assert.equal(calls, before);
+});
 test('bootstrap requires a local same-origin custom request', async t => { const app = await appFor(t); assert.equal((await fetch(app.origin + '/api/bootstrap')).status, 403); assert.equal((await fetch(app.origin + '/api/bootstrap', { headers: { 'X-Interlude-Client': 'dashboard', Origin: 'https://evil.test' } })).status, 403); const response = await fetch(app.origin + '/api/bootstrap', { headers: { 'X-Interlude-Client': 'dashboard' } }); assert.equal(response.status, 200); assert.equal((await response.json()).token, token); });
 test('the pinned Interlude extension can pair automatically over its origin-checked bridge', async t => {
   const app = await appFor(t);

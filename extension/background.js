@@ -1,5 +1,7 @@
 import { performAction } from './actions.js';
 import { SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor } from './platforms.js';
+import { WebTasks } from './web-tasks.js';
+import { assistantFor } from './assistants.js';
 
 let socket;
 let keepAlive;
@@ -18,6 +20,12 @@ const initialized = chrome.storage.session.get('selection').then(value => { sele
 const send = value => { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(value)); };
 const saveSelection = () => chrome.storage.session.set({ selection });
 const enqueue = action => { const next = actionQueue.then(action); actionQueue = next.catch(() => {}); return next; };
+const webTasks = new WebTasks({ chrome, media: (action, options = {}) => {
+  const tabId = selection.tabId;
+  const abort = () => { enqueue(() => cancelTarget(tabId, undefined, action)).catch(() => {}); };
+  if (['break', 'pause'].includes(action)) options.signal?.addEventListener('abort', abort, { once: true });
+  return enqueue(() => runAction(action, { ...options, targetTabId: tabId })).finally(() => options.signal?.removeEventListener('abort', abort));
+} });
 
 function registerSites() {
   const next = registration.then(syncRegisteredSites);
@@ -55,7 +63,7 @@ async function report() {
   const media = selected ? await performAction(chrome, { tabId: selectedId }, 'status') : null;
   const state = { type: 'browser', selected, mediaReady: selected && media?.ok === true && media.mediaReady === true,
     platform: platform?.id || '', title: selected ? tab.title || platform.name : '',
-    message: !ready ? lastMessage : media?.message || lastMessage, gate: selected && selection.gate === true };
+    message: !ready ? lastMessage : media?.message || lastMessage, gate: selected && selection.gate === true, webMonitoring: webTasks.state.enabled };
   if (ready && sequence === reportSequence && (selectedId === selection.tabId || (!selected && !selection.tabId))) send(state);
   return { ...state, connected: ready, tabId: selected ? selectedId : null };
 }
@@ -92,6 +100,7 @@ function cancelCommands() {
 }
 async function connect() {
   await initialized;
+  await webTasks.initialized;
   if (connecting || socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
   connecting = true;
   try {
@@ -134,6 +143,9 @@ async function connect() {
         return;
       }
       if (message.type !== 'command' || !ready || typeof message.id !== 'string' || message.id.length > 200) return;
+      if (webTasks.state.enabled && message.action !== 'status') {
+        send({ type: 'ack', id: message.id, ok: false, message: 'Website monitoring owns media. Turn it off in the extension to use desktop monitoring.' }); return;
+      }
       if (handled.has(message.id)) { send(handled.get(message.id)); return; }
       if (active.has(message.id)) return;
       if (!['break', 'learn', 'pause', 'minimize', 'release', 'status'].includes(message.action)) {
@@ -183,13 +195,18 @@ async function popupState() {
     return { id: tab.id, title: tab.title || platformFor(tab.url).name, platform: platformFor(tab.url).id,
       platformName: platformFor(tab.url).name, origin: permissionFor(tab.url), origins };
   }));
-  return { ok: true, state, tabs };
+  await webTasks.initialized;
+  const aiTabs = (await chrome.tabs.query({})).filter(tab => assistantFor(tab.url)).map(tab => ({ id: tab.id, name: assistantFor(tab.url).name, title: tab.title || assistantFor(tab.url).name, origin: assistantFor(tab.url).origin }));
+  return { ok: true, state, tabs, aiTabs, web: webTasks.state };
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return;
   // An extension page opened in a normal tab also has sender.tab. Authenticate
   // the exact extension page before distinguishing content-script messages.
   const isPopup = sender.url === chrome.runtime.getURL('popup.html');
+  if (!isPopup && sender.tab && message.type === 'assistant-signal') {
+    webTasks.accept(message, sender).then(() => respond({ ok: true })).catch(() => respond({ ok: false })); return true;
+  }
   if (!isPopup && sender.tab) {
     if (!platformFor(sender.url) || !['media-bootstrap', 'media-release', 'media-change'].includes(message.type)) return;
     initialized.then(async () => {
@@ -201,6 +218,13 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     return true;
   }
   if (!isPopup) return;
+  if (['web-watch', 'web-remove', 'web-configure', 'web-acknowledge'].includes(message.type)) {
+    const operation = message.type === 'web-watch' ? () => webTasks.watch(message.tabId)
+      : message.type === 'web-remove' ? () => webTasks.remove(message.tabId)
+      : message.type === 'web-acknowledge' ? () => webTasks.acknowledge()
+      : () => webTasks.configure({ enabled: message.enabled, mode: message.mode });
+    operation().then(popupState).then(respond).catch(error => respond({ ok: false, message: error.message })); return true;
+  }
   if (message.type === 'status') {
     popupState().then(respond).catch(error => respond({ ok: false, message: error.message }));
     return true;
@@ -240,15 +264,17 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   }).then(popupState).then(respond).catch(error => respond({ ok: false, message: error.message || 'The extension could not complete this action.' }));
   return true;
 });
-chrome.tabs.onRemoved.addListener(id => { if (selection.tabId === id) report().catch(() => {}); });
+chrome.tabs.onRemoved.addListener(id => { webTasks.remove(id).catch(() => {}); if (selection.tabId === id) report().catch(() => {}); });
 chrome.tabs.onUpdated.addListener((id, changes) => {
+  if (changes.url) webTasks.navigation(id, changes.url).catch(() => {});
   if (selection.tabId === id && (changes.status === 'complete' || changes.url || changes.audible !== undefined)) report().catch(() => {});
 });
-chrome.permissions.onAdded.addListener(() => registerSites().catch(() => {}));
-chrome.permissions.onRemoved.addListener(() => { registerSites().catch(() => {}); report().catch(() => {}); });
+chrome.permissions.onAdded.addListener(() => { registerSites().catch(() => {}); webTasks.register().catch(() => {}); });
+chrome.permissions.onRemoved.addListener(() => { registerSites().catch(() => {}); webTasks.register().catch(() => {}); webTasks.configure({ enabled: false }).catch(() => {}); report().catch(() => {}); });
 chrome.runtime.onStartup.addListener(() => connect().catch(() => {}));
-chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'reconnect') connect().catch(() => {}); });
-chrome.alarms.create('reconnect', { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'reconnect') { connect().catch(() => {}); webTasks.watchdog().catch(() => {}); } });
+chrome.alarms.create('reconnect', { periodInMinutes: 0.5 });
 chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }).catch(() => {});
 registerSites().catch(() => {});
+webTasks.register().catch(() => {});
 connect().catch(() => {});

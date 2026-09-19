@@ -17,7 +17,7 @@ export class Session {
     this.waitKey = null;
     this.state = {
       enabled: false, mode: 'fun', autoReturn: true, maximize: true, resume: true, minimize: false,
-      session: null, turn: null, status: 'idle', startedAt: null, project: path.basename(cwd ?? '') || 'Your project',
+      provider: 'codex', session: null, turn: null, status: 'idle', startedAt: null, project: path.basename(cwd ?? '') || 'Your project',
       hookSeenAt: null, updatedAt: now(), revision: 0, activity: [], notice: '', manualHold: false,
     };
   }
@@ -111,7 +111,7 @@ export class Session {
       this.waits.clear();
       this.pending = null;
       this.state.status = event.event === 'Interrupt' ? 'interrupted' : 'disconnected';
-      this.log(event.event === 'Interrupt' ? 'You stopped this turn' : 'Codex session ended');
+      this.log(event.event === 'Interrupt' ? 'This turn stopped' : `${this.state.provider === 'claude' ? 'Claude' : 'Codex'} session ended`);
       return this.state.enabled ? [{ type: 'pause' }] : [];
     } else if (['PreToolUse', 'PostToolUse'].includes(event.event)) {
       const wasWaiting = ['permission', 'input', 'stopping'].includes(this.state.status);
@@ -145,7 +145,7 @@ export class Session {
     if (!this.pending || this.now() < this.pending.due) return [];
     const next = this.pending;
     this.pending = null;
-    if (next.reason === 'complete') { this.state.status = 'complete'; this.log('Codex finished responding'); this.touch(); }
+    if (next.reason === 'complete') { this.state.status = 'complete'; this.log(`${this.state.provider === 'claude' ? 'Claude' : 'Codex'} finished responding`); this.touch(); }
     if (!this.state.enabled || this.state.manualHold) return [];
     if (next.type === 'handoff' && this.state.status !== 'running') return [];
     return [{ type: next.type, reason: next.reason, mode: this.state.mode, turn: this.state.turn }];

@@ -1,8 +1,8 @@
 # Interlude beta testing
 
-For 0.4 desktop packages, start with [desktop setup](desktop-release.md); no terminal or compiler is needed on the tester's computer. The source workflow below remains supported. Public release still requires signing and interactive acceptance.
+For desktop packages, start with [desktop setup](desktop-release.md); no terminal or compiler is needed on the tester's computer. The source workflow below remains supported. Public release still requires signing and interactive acceptance.
 
-This beta is for a small group of technical testers using local Codex desktop tasks with Chrome, Brave, or Edge. Windows and macOS are target platforms. macOS native code compiles in CI; interactive Mac behavior is still a beta test item. Safari, Firefox, remote/cloud sessions, phone apps, and native streaming apps are outside this beta.
+This beta is for a small group of technical testers using Chrome, Brave, or Edge on Windows or macOS. The 0.5 integration preview adds Claude Code hooks, watched Claude/Codex website task tabs, and experimental ordinary Claude desktop Chat/Cowork observation. Follow [assistant integrations](assistant-integrations.md) for setup and the surface-specific acceptance checklist. Remote tasks require their website tab to remain open; local hooks do not monitor remote sessions. Safari, Firefox, phone apps, and native streaming apps are outside this beta. Interactive Mac behavior still needs actual hardware acceptance.
 
 ## Install and first run
 

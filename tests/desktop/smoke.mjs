@@ -8,6 +8,7 @@ import { ROOT } from '../../src/config.mjs';
 
 const temporary = await mkdtemp(path.join(os.tmpdir(), 'Interlude desktop smoke '));
 const env = { ...process.env, INTERLUDE_STATE_DIR: path.join(temporary, 'state'), CODEX_HOME: path.join(temporary, 'codex'),
+  CLAUDE_CONFIG_DIR: path.join(temporary, 'claude'),
   INTERLUDE_DESKTOP_SMOKE_FILE: path.join(temporary, 'ready.json') };
 delete env.ELECTRON_RUN_AS_NODE;
 const executablePath = process.argv[2] && path.resolve(process.argv[2]);
@@ -77,6 +78,30 @@ try {
   await expect(page.getByRole('button', { name: 'Connect Codex', exact: true })).toBeVisible();
   assert.deepEqual(JSON.parse(await readFile(path.join(env.CODEX_HOME, 'hooks.json'), 'utf8')), original);
   await page.getByRole('button', { name: 'Close setup', exact: true }).click();
+  await mkdir(env.CLAUDE_CONFIG_DIR, { recursive: true });
+  const originalClaude = { permissions: { deny: ['Bash(rm *)'] } };
+  await writeFile(path.join(env.CLAUDE_CONFIG_DIR, 'settings.json'), JSON.stringify(originalClaude));
+  await page.getByText('Claude desktop', { exact: true }).click();
+  await page.getByRole('button', { name: 'Connect Claude Code', exact: true }).click();
+  await expect(page.locator('#claude-setup-status')).toContainText('Hooks installed');
+  const claudeConfig = JSON.parse(await readFile(path.join(env.CLAUDE_CONFIG_DIR, 'settings.json'), 'utf8'));
+  const claudeHook = claudeConfig.hooks.UserPromptSubmit.at(-1).hooks[0].command;
+  const claudeOutput = await new Promise((resolve, reject) => {
+    const child = spawn(process.platform === 'win32' ? 'powershell.exe' : '/bin/sh', process.platform === 'win32'
+      ? ['-NoProfile', '-NonInteractive', '-Command', claudeHook] : ['-c', claudeHook], { env, windowsHide: true, timeout: 10000 });
+    let output = '', error = ''; child.stdout.on('data', data => output += data); child.stderr.on('data', data => error += data);
+    child.on('error', reject); child.on('close', code => code === 0 ? resolve(output) : reject(new Error(`Claude bundled hook failed: ${error}`)));
+    child.stdin.end(JSON.stringify({ session_id: 'claude-smoke', hook_event_name: 'UserPromptSubmit', cwd: ROOT }));
+  });
+  assert.deepEqual(JSON.parse(claudeOutput), {});
+  await page.getByRole('button', { name: 'Disconnect Claude Code', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Connect Claude Code', exact: true })).toBeVisible();
+  assert.deepEqual(JSON.parse(await readFile(path.join(env.CLAUDE_CONFIG_DIR, 'settings.json'), 'utf8')), { ...originalClaude, hooks: {} });
+  await page.locator('#claude-observer').check();
+  await expect(page.locator('#observer-status')).toContainText('Ready.');
+  await page.locator('#claude-observer').uncheck();
+  await expect(page.locator('#observer-status')).toContainText('Off.');
+  await page.getByText('Claude desktop', { exact: true }).click();
   await page.getByRole('button', { name: 'Locked-in mode', exact: true }).click();
   await expect(page.locator('#lesson')).toBeVisible();
   await page.getByText('Connection details', { exact: true }).click();
@@ -95,7 +120,7 @@ try {
   await desktop.close(); desktop = null;
   const preferences = JSON.parse(await readFile(path.join(env.INTERLUDE_STATE_DIR, 'preferences.json'), 'utf8'));
   assert.equal(preferences.mode, 'learn'); assert.equal(preferences.enabled, undefined);
-  console.log(JSON.stringify({ ok: true, ...runtime, checks: ['sandbox', 'renderer isolation', 'guided setup', 'bundled hook execution', 'packaged native diagnostics', 'debug copy', 'hook removal', 'preferences', 'console'] }));
+  console.log(JSON.stringify({ ok: true, ...runtime, checks: ['sandbox', 'renderer isolation', 'guided setup', 'bundled Codex and Claude hook execution', 'Claude observer controls (disarmed)', 'packaged native diagnostics', 'debug copy', 'hook removal', 'preferences', 'console'] }));
 } finally {
   await desktop?.close();
   if (packagedProcess && packagedProcess.exitCode === null) packagedProcess.kill();

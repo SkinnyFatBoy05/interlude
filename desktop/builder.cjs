@@ -3,7 +3,7 @@ module.exports = {
   appId: 'com.skinnyfatboy05.interlude', productName: 'Interlude',
   directories: { output: 'artifacts/desktop', buildResources: '.desktop-build' },
   files: ['desktop/bootstrap.cjs', 'desktop/main.mjs', 'desktop/preload.cjs', 'desktop/policy.mjs', 'src/**', 'web/**',
-    'scripts/build-windows.mjs', 'scripts/build-macos.mjs', 'scripts/native-build.mjs', 'scripts/install-hooks.mjs',
+    'scripts/build-windows.mjs', 'scripts/build-macos.mjs', 'scripts/native-build.mjs', 'scripts/install-hooks.mjs', 'scripts/install-claude-hooks.mjs', 'extension/task-signals.js',
     'package.json', 'PRIVACY.md', 'SECURITY.md'],
   extraResources: [
     { from: '.desktop-build/native', to: 'native' },

@@ -2,6 +2,8 @@ import Foundation
 import AppKit
 import ApplicationServices
 
+var assistantName = "Codex"
+
 // AppKit activation and public Accessibility APIs only. No AppleScript, keystrokes, or permission prompts.
 struct Output: Encodable {
     var focused = false
@@ -14,9 +16,44 @@ struct Output: Encodable {
     var message: String
     var accessibilityTrusted: Bool? = nil
     var targetBundleId: String? = nil
+    var observation: Observation? = nil
+}
+
+struct Observation: Encodable {
+    var available = false
+    var window: String
+    var working = false
+    var attention = false
+    var completed = false
+    var failed = false
+    var copies = 0
+    var composer = false
+}
+
+func observeControls(_ root: AXUIElement, pid: pid_t) -> Observation {
+    var result = Observation(window: String(pid))
+    var queue = [root], labels = [String](), index = 0
+    let started = Date()
+    while index < queue.count && index < 2500 && Date().timeIntervalSince(started) < 1.8 {
+        let element = queue[index]; index += 1
+        let role = attribute(element, kAXRoleAttribute) as? String
+        if role == kAXButtonRole {
+            let label = (attribute(element, kAXTitleAttribute) as? String) ?? (attribute(element, kAXDescriptionAttribute) as? String) ?? ""
+            labels.append(label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+        }
+        if (role == kAXTextAreaRole || role == kAXTextFieldRole) && (attribute(element, kAXEnabledAttribute) as? Bool) == true { result.composer = true }
+        if let children = attribute(element, kAXChildrenAttribute) as? [AXUIElement] { queue.append(contentsOf: children.prefix(max(0, 2500 - queue.count))) }
+    }
+    result.available = index == queue.count && index < 2500
+    result.working = labels.contains { ["stop", "stop response", "stop generating", "stop streaming", "stop task", "cancel task"].contains($0) }
+    result.attention = labels.contains { ["allow once", "approve", "allow this time"].contains($0) } && labels.contains { ["deny", "reject", "don't allow"].contains($0) }
+    result.copies = labels.filter { ["copy", "copy response", "copy message", "copy to clipboard"].contains($0) }.count
+    return result
 }
 
 func emit(_ result: Output) {
+    var result = result
+    result.message = result.message.replacingOccurrences(of: "Codex", with: assistantName)
     if let data = try? JSONEncoder().encode(result), let json = String(data: data, encoding: .utf8) {
         print(json)
     }
@@ -37,8 +74,9 @@ func validatedApplication(_ app: NSRunningApplication, explicitID: String?) -> B
     if let explicitID = explicitID { return identifier == explicitID }
     let names = [bundle.object(forInfoDictionaryKey: "CFBundleName") as? String,
                  bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String]
-    return app.localizedName?.caseInsensitiveCompare("Codex") == .orderedSame
-        && names.contains(where: { $0?.caseInsensitiveCompare("Codex") == .orderedSame })
+    if assistantName == "Claude" && identifier != "com.anthropic.claudefordesktop" { return false }
+    return app.localizedName?.caseInsensitiveCompare(assistantName) == .orderedSame
+        && names.contains(where: { $0?.caseInsensitiveCompare(assistantName) == .orderedSame })
 }
 
 func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
@@ -119,11 +157,12 @@ func maximize(_ window: AXUIElement) -> String {
 
 func main() -> Int32 {
     let args = Array(CommandLine.arguments.dropFirst())
-    guard args.count == 2, ["yes", "no", "status", "smoke"].contains(args[0]),
+    guard (args.count == 2 || (args.count == 3 && args[2] == "claude")), ["yes", "no", "status", "smoke", "observe"].contains(args[0]),
           args[1] == "-" || validBundleID(args[1]) else {
         emit(Output(code: "invalid_arguments", message: "Use yes, no, status, or smoke followed by a bundle identifier or -."))
         return 2
     }
+    if args.count == 3 { assistantName = "Claude" }
     if args[0] == "smoke" {
         // Exercises linked Swift/AppKit runtime without an interactive session or a permission request.
         guard validBundleID("com.example.Codex"), !validBundleID("bad\nidentifier"),
@@ -164,6 +203,17 @@ func main() -> Int32 {
             : "More than one Codex window is open. Return to the intended task manually."
         emit(result)
         return 0
+    }
+    if mode == "observe" {
+        guard trusted, let window = windows?.first else {
+            result.code = "accessibility_required"
+            result.message = "Claude Chat/Cowork observation needs Accessibility access to Interlude in System Settings."
+            emit(result); return 0
+        }
+        result.observation = observeControls(window, pid: target.processIdentifier)
+        result.code = result.observation?.available == true ? "observed" : "observation_incomplete"
+        result.message = result.observation?.available == true ? "Claude accessibility controls observed. No conversation text is collected." : "Claude controls could not be fully inspected. Use hooks for Code."
+        emit(result); return 0
     }
     if mode != "status" {
         _ = target.unhide()

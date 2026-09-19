@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor } from '../extension/platforms.js';
+import { WebTasks } from '../extension/web-tasks.js';
+import { assistantFor } from '../extension/assistants.js';
 
 const code = (await readFile(new URL('../extension/background.js', import.meta.url), 'utf8')).replace(/^import .*;\r?\n/gm, '');
 const flush = async () => { for (let count = 0; count < 8; count++) await new Promise(resolve => setImmediate(resolve)); };
@@ -37,7 +39,7 @@ async function background(t, { selected = 12, url = 'https://www.youtube.com/wat
     close() { this.readyState = 3; this.onclose?.({ code: 1000 }); }
     receive(message) { this.onmessage?.({ data: JSON.stringify(message) }); }
   }
-  const context = { chrome, WebSocket: Socket, AbortController, SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor,
+  const context = { chrome, WebSocket: Socket, AbortController, SITE_MATCHES, DEFAULT_MATCHES, platformFor, permissionFor, WebTasks, assistantFor,
     performAction: async (_chrome, selection, action, options = {}) => { actions.push({ selection: { ...selection }, action, options }); return perform ? perform(action, options) : { ok: !failure, mediaReady, message: failure ? 'Player unreachable.' : 'Player status.' }; },
     setTimeout(fn, ms) { const timer = setTimeout(fn, ms); timer.unref(); timers.add(timer); return timer; }, clearTimeout,
     setInterval(fn, ms) { const timer = setInterval(fn, ms); timer.unref(); timers.add(timer); return timer; }, clearInterval,

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { isYouTube, performAction, withTimeout } from '../extension/actions.js';
 import { PLATFORMS, SITE_MATCHES, OPTIONAL_MATCHES, platformFor } from '../extension/platforms.js';
+import { AI_MATCHES } from '../extension/assistants.js';
 
 const mediaCode = await readFile(new URL('../extension/media.js', import.meta.url), 'utf8');
 function mockMedia({ paused = false, autoplayDenied = false, visible = true, source = 'video-one', top = 0, muted = false, volume = 1, tagName = 'VIDEO', refusesPause = false, delayedPlay } = {}) {
@@ -125,7 +126,7 @@ test('platform allowlist rejects deceptive hosts, schemes, credentials and nonst
 });
 test('manifest requests only exact registered optional hosts', async () => {
   const manifest = JSON.parse(await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
-  assert.deepEqual(manifest.optional_host_permissions, OPTIONAL_MATCHES);
+  assert.deepEqual(manifest.optional_host_permissions, [...AI_MATCHES, ...OPTIONAL_MATCHES]);
   assert.ok(!JSON.stringify(manifest).includes('<all_urls>')); assert.ok(!SITE_MATCHES.some(pattern => pattern.includes('*.')));
   assert.ok(manifest.permissions.includes('scripting')); assert.ok(manifest.content_scripts.every(script => script.all_frames));
 });

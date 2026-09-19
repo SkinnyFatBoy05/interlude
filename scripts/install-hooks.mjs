@@ -82,7 +82,7 @@ export function mergeHooks(existing, command, remove = false) {
   return next;
 }
 
-export async function updateHooksFile({ file, command, remove = false }) {
+export async function updateHooksFile({ file, command, remove = false, merge = mergeHooks }) {
   await mkdir(path.dirname(file), { recursive: true });
   const lockFile = `${file}.interlude-lock`;
   let lock;
@@ -101,7 +101,7 @@ export async function updateHooksFile({ file, command, remove = false }) {
       mode = info.mode & 0o777;
       before = await readFile(file, 'utf8');
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    const merged = mergeHooks(before === null ? {} : JSON.parse(before), command, remove);
+    const merged = merge(before === null ? {} : JSON.parse(before), command, remove);
     const content = JSON.stringify(merged, null, 2) + '\n';
     if (before === content || (before === null && remove)) return { changed: false, backup: null };
     let backup = null;

@@ -20,7 +20,7 @@ await writeFile(path.join(output, 'build.json'), JSON.stringify({ platform: proc
 // separate hook runtime so its config/events modules also remain in the app.
 const staging = path.resolve(ROOT, '.desktop-build', 'companion');
 if (!staging.startsWith(path.resolve(ROOT) + path.sep) || (await lstat(path.dirname(staging))).isSymbolicLink()) throw new Error('Unsafe desktop staging directory.');
-const hookFiles = await collectReleaseFiles(ROOT, ['src/config.mjs', 'src/events.mjs', 'scripts/hook.mjs', 'extension']);
+const hookFiles = await collectReleaseFiles(ROOT, ['src/config.mjs', 'src/events.mjs', 'scripts/hook.mjs', 'scripts/claude-hook.mjs', 'extension']);
 await rm(staging, { recursive: true, force: true });
 for (const [relative, bytes] of Object.entries(hookFiles)) {
   const destination = path.join(staging, relative);

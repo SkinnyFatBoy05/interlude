@@ -1,0 +1,20 @@
+import { sanitizeClaudeHook } from '../src/events.mjs';
+import { readConnection } from '../src/config.mjs';
+
+try {
+  const chunks = []; let bytes = 0;
+  for await (const chunk of process.stdin) {
+    bytes += chunk.length;
+    if (bytes > 2_000_000) throw new Error('Input too large');
+    chunks.push(chunk);
+  }
+  const event = sanitizeClaudeHook(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+  if (event) {
+    const config = await readConnection();
+    await fetch('http://127.0.0.1:4318/api/hook', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },
+      body: JSON.stringify(event), signal: AbortSignal.timeout(650),
+    });
+  }
+} catch { /* Passive monitoring never approves, blocks, or changes a task. */ }
+process.stdout.write('{}');

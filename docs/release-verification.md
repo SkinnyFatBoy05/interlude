@@ -2,6 +2,16 @@
 
 This record distinguishes implementation and automated tests from tests on real accounts and desktops. A registered host is a compatibility target, not a certification that every player on that service is supported.
 
+## 0.5.0 assistant integration preview — 2026-09-19
+
+Added standalone Claude chat, Claude Code web and Codex web observation in the extension, passive local Claude Code hooks, provider-aware native return, and opt-in Windows/macOS accessibility observation for ordinary Claude Chat/Cowork. Setup and limitations are in [assistant integrations](assistant-integrations.md).
+
+Local Windows checks passed JavaScript/manifest validation and the 202-case unit suite (200 passed, two filesystem skips). All five required Chromium tests passed; the separate recording test is opt-in. The website test uses an actual MV3 extension and controlled pages at the three supported task URL shapes, with no companion connection. It verifies start → approval pause → resume → stable completion pause → originating-tab return and the bundled learning page. These pages simulate the semantic controls; they are not real signed-in Claude/Codex sessions.
+
+Windows native compilation and the unpacked desktop smoke verified packaged setup, temporary Claude/Codex hook installation and removal, execution using the bundled runtime, unrelated-setting preservation, observer controls, sandboxing, diagnostics and preferences. No user's hook settings were changed for these tests. Refer to the current commit's CI run for macOS Intel/Apple Silicon compilation and packaged runtime results.
+
+Live signed-in websites and actual Claude desktop Chat/Cowork accessibility trees were unavailable during local verification. Those adapters remain experimental, including English-label matching, selected-task-only desktop observation and proprietary player behavior. Signed installers, notarization, store distribution and real Mac focus/Spaces/multiple-monitor acceptance remain public-release gates.
+
 ## 0.4.0 desktop release candidate — 2026-09-12
 
 Implementation commit `defa702` passed [all ten CI jobs](https://github.com/SkinnyFatBoy05/interlude/actions/runs/34679059681): Node 22/24 on Windows/macOS/Linux, Chromium dashboard/extension and demo recording, and desktop packaging plus UI/runtime smoke on Windows x64, macOS ARM64 and macOS Intel.

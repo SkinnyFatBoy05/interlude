@@ -27,6 +27,7 @@ export class Sessions {
       runningCount: [...this.entries.values()].filter(item => item.state.status === 'running').length,
       attentionCount: this.alerts.size,
       tasks: [...this.entries].map(([id, item]) => ({ id, project: pathStyle(item.cwd).basename(item.cwd),
+        provider: item.state.provider,
         status: item.state.status, needsAttention: this.alerts.has(this.key(id, item.state)) })),
     };
   }
@@ -54,6 +55,11 @@ export class Sessions {
   }
   receive(event) {
     if (this.now() - event.at > 15000 || event.at - this.now() > 5000) return [];
+    if (event.provider === 'claude' && event.turn === 'unassigned') {
+      const current = this.entries.get(event.session);
+      if (event.event !== 'UserPromptSubmit' && !current) return [];
+      event = { ...event, turn: event.event === 'UserPromptSubmit' ? event.id : current.state.turn };
+    }
     for (const [key, expires] of this.retiredTurns) if (expires < this.now()) this.retiredTurns.delete(key);
     if (this.retiredTurns.has(`${event.session}:${event.turn}`)) return [];
     let item = this.entries.get(event.session);
@@ -68,9 +74,11 @@ export class Sessions {
         this.entries.delete(removable[0]);
       }
       item = new Session({ cwd: event.cwd, now: this.now }); item.update(this.settings);
+      item.state.provider = event.provider ?? 'codex';
+      item.state.surface = event.surface ?? 'hooks';
       this.entries.set(event.session, item);
     }
-    if (scopeKey(item.cwd) !== scopeKey(event.cwd)) return [];
+    if (scopeKey(item.cwd) !== scopeKey(event.cwd) || item.state.provider !== (event.provider ?? 'codex')) return [];
     const previousEpoch = item.epoch, previousRevision = item.state.revision;
     const wasBlocked = this.blocked();
     const effects = item.receive(event);
@@ -131,5 +139,9 @@ export class Sessions {
     this.resumeOther(); return [];
   }
   manualReturn() { this.manualHold = true; this.bump(); }
+  clearProvider(provider) {
+    for (const [id, item] of this.entries) if (item.state.provider === provider) { this.entries.delete(id); if (this.active === id) this.active = null; }
+    this.reconcile(); this.lastAlert = null; this.bump();
+  }
   browserRejoined() { this.resumeOther(); }
 }

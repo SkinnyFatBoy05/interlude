@@ -10,6 +10,7 @@ module.exports = async context => {
   for (const file of ['desktop/bootstrap.cjs', 'desktop/main.mjs', 'desktop/preload.cjs', 'src/server.mjs', 'src/config.mjs', 'src/events.mjs', 'web/index.html', 'node_modules/ws/index.js']) {
     if (!entries.has(file)) throw new Error(`Desktop archive is missing ${file}.`);
   }
-  for (const file of ['src/config.mjs', 'src/events.mjs', 'scripts/hook.mjs', 'extension/manifest.json']) await access(path.join(resources, 'companion', file));
+  for (const file of ['src/config.mjs', 'src/events.mjs', 'scripts/hook.mjs', 'scripts/claude-hook.mjs', 'extension/manifest.json']) await access(path.join(resources, 'companion', file));
+  for (const file of ['extension/task-signals.js', 'scripts/install-claude-hooks.mjs', 'src/desktop-observer.mjs']) if (!entries.has(file)) throw new Error(`Desktop archive is missing ${file}.`);
   console.log('Desktop archive and separate hook runtime verified.');
 };

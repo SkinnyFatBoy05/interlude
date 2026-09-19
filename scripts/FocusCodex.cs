@@ -4,10 +4,45 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Windows.Automation;
 using System.Web.Script.Serialization;
 
 internal static class FocusCodex
 {
+    private static string AssistantName = "Codex";
+    private static void Observe(IntPtr target)
+    {
+        // Bound traversal and inspect only button labels/edit availability.
+        // Conversation text, field values and window titles are never emitted.
+        var labels = new List<string>();
+        var queue = new Queue<AutomationElement>();
+        queue.Enqueue(AutomationElement.FromHandle(target));
+        int scanned = 0; bool composer = false;
+        var clock = Stopwatch.StartNew();
+        while (queue.Count > 0 && scanned++ < 2500 && clock.ElapsedMilliseconds < 1800) {
+            var element = queue.Dequeue();
+            var info = element.Current;
+            if (!info.IsOffscreen) {
+                if (info.ControlType == ControlType.Button) labels.Add((info.Name ?? "").Trim().ToLowerInvariant());
+                if (info.ControlType == ControlType.Edit && info.IsEnabled) composer = true;
+            }
+            var child = TreeWalker.ControlViewWalker.GetFirstChild(element);
+            int siblings = 0;
+            while (child != null && siblings++ < 500 && queue.Count < 2500) { queue.Enqueue(child); child = TreeWalker.ControlViewWalker.GetNextSibling(child); }
+        }
+        bool available = queue.Count == 0 && scanned < 2500;
+        var stops = new HashSet<string>(new [] { "stop", "stop response", "stop generating", "stop streaming", "stop task", "cancel task" });
+        var copies = new HashSet<string>(new [] { "copy", "copy response", "copy message", "copy to clipboard" });
+        bool working = labels.Exists(name => stops.Contains(name));
+        bool attention = labels.Exists(name => name == "allow once" || name == "approve" || name == "allow this time")
+            && labels.Exists(name => name == "deny" || name == "reject" || name == "don't allow");
+        Console.WriteLine(new JavaScriptSerializer().Serialize(new {
+            focused = GetForegroundWindow() == target, focusedWindowMaximized = false, targetFound = true, targetCount = 1,
+            attentionRequested = false, maximizeStatus = "not_requested", code = available ? "observed" : "observation_incomplete",
+            message = available ? "Claude accessibility controls observed. No conversation text is collected." : "Claude controls could not be fully inspected. Keep the task visible and use hooks for Code.",
+            observation = new { available, window = target.ToInt64().ToString(), working, attention, completed = false, failed = false, copies = labels.FindAll(name => copies.Contains(name)).Count, composer }
+        }));
+    }
     private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
     [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
@@ -29,6 +64,12 @@ internal static class FocusCodex
 
     private static bool IsCodexDesktop(Process process)
     {
+        if (AssistantName == "Claude") {
+            if (!String.Equals(process.ProcessName, "Claude", StringComparison.OrdinalIgnoreCase)) return false;
+            FileVersionInfo metadata = process.MainModule.FileVersionInfo;
+            return String.Equals(metadata.ProductName, "Claude", StringComparison.OrdinalIgnoreCase)
+                && metadata.CompanyName != null && metadata.CompanyName.StartsWith("Anthropic", StringComparison.OrdinalIgnoreCase);
+        }
         IntPtr handle = OpenProcess(0x1000, false, process.Id);
         if (handle == IntPtr.Zero) return false;
         try
@@ -62,7 +103,7 @@ internal static class FocusCodex
             attentionRequested = attention,
             maximizeStatus,
             code,
-            message
+            message = message.Replace("Codex", AssistantName)
         }));
     }
 
@@ -70,19 +111,20 @@ internal static class FocusCodex
     {
         try
         {
-            if (args.Length != 1 || (args[0] != "yes" && args[0] != "no" && args[0] != "status" && args[0] != "smoke"))
+            if ((args.Length != 1 && args.Length != 2) || (args.Length == 2 && args[1] != "claude") || (args[0] != "yes" && args[0] != "no" && args[0] != "status" && args[0] != "smoke" && args[0] != "observe"))
             {
                 Result("invalid_arguments", "Use yes, no, status, or smoke.", IntPtr.Zero, 0, false, "not_requested");
                 return 2;
             }
+            if (args.Length == 2) AssistantName = "Claude";
             if (args[0] == "smoke")
             {
                 Result("smoke_ok", "Windows helper runtime is ready; no desktop changes were requested.", IntPtr.Zero, 0, false, "not_requested");
                 return 0;
             }
             var candidates = new HashSet<uint>();
-            var processes = new List<Process>(Process.GetProcessesByName("Codex"));
-            processes.AddRange(Process.GetProcessesByName("ChatGPT"));
+            var processes = new List<Process>(Process.GetProcessesByName(AssistantName));
+            if (AssistantName == "Codex") processes.AddRange(Process.GetProcessesByName("ChatGPT"));
             foreach (Process process in processes)
             {
                 using (process)
@@ -108,6 +150,7 @@ internal static class FocusCodex
                 return 0;
             }
             IntPtr target = targets[0];
+            if (args[0] == "observe") { Observe(target); return 0; }
             if (args[0] != "status")
             {
                 if (args[0] == "yes") ShowWindowAsync(target, 3);

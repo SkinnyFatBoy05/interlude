@@ -8,6 +8,7 @@ import { createPlatformController } from '../src/platform.mjs';
 import { ROOT, stateDirectory } from '../src/config.mjs';
 import { HOOKS } from '../src/events.mjs';
 import { hookCommand, mergeHooks, updateHooksFile } from '../scripts/install-hooks.mjs';
+import { CLAUDE_HOOKS, claudeSettingsFile, claudeHookCommand, mergeClaudeHooks } from '../scripts/install-claude-hooks.mjs';
 import { dashboardURL, trustedDesktopSender, validateDesktopAction } from './policy.mjs';
 
 const directory = fileURLToPath(new URL('.', import.meta.url));
@@ -15,6 +16,7 @@ const companionRoot = app.isPackaged ? path.join(process.resourcesPath, 'compani
 const extensionPath = path.join(companionRoot, 'extension');
 const hooksFile = path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'hooks.json');
 const command = hookCommand(process.execPath, path.join(companionRoot, 'scripts', 'hook.mjs'), process.platform === 'win32', { runAsNode: true });
+const claudeCommand = claudeHookCommand(process.execPath, path.join(companionRoot, 'scripts', 'claude-hook.mjs'), process.platform === 'win32', { runAsNode: true });
 let companion, window, tray;
 let quitting = false, closed = false, setupBusy = false;
 const smokeFile = process.env.INTERLUDE_DESKTOP_SMOKE_FILE;
@@ -31,7 +33,11 @@ async function hooksInstalled() {
     > (removed.hooks?.[event] ?? []).flatMap(group => group.hooks ?? []).length);
 }
 async function status() {
+  let claudeInstalled = false;
+  try { const config = JSON.parse(await readFile(claudeSettingsFile(), 'utf8')); claudeInstalled = CLAUDE_HOOKS.every(event => config.hooks?.[event]?.some(group => group.hooks?.some(h => h.command === claudeCommand && h.statusMessage === 'Interlude: Claude task event'))); }
+  catch (error) { if (error.code !== 'ENOENT') throw new Error('Claude settings could not be read.'); }
   return { packaged: app.isPackaged, version: app.getVersion(), extensionPath, hooksInstalled: await hooksInstalled(),
+    claudeInstalled,
     openAtLogin: app.isPackaged && app.getLoginItemSettings({ args: ['--hidden'] }).openAtLogin };
 }
 function show() {
@@ -52,7 +58,7 @@ async function initialize() {
     prepareMacOS: async () => path.join(process.resourcesPath, 'native', 'InterludeFocus'),
   }) : createPlatformController();
   // Only the isolated smoke harness can choose a random port; normal builds use 4318.
-  companion = await createCompanion({ cwd: companionRoot, nativeFocus: native.focusCodex, nativeDiagnostics: native.platformDiagnostics,
+  companion = await createCompanion({ cwd: companionRoot, nativeFocus: native.focusCodex, nativeDiagnostics: native.platformDiagnostics, nativeObserve: native.observeClaude,
     showLearning: async ({ signal }) => { if (signal.aborted) return { ok: false }; show(); return { ok: window?.isFocused() === true, message: 'Open Interlude to continue learning.' }; },
     ...(smokeFile ? { port: 0 } : {}) });
   if (smokeFile) console.log('Desktop smoke: local companion ready.');
@@ -85,6 +91,9 @@ async function initialize() {
       if (action === 'install-hooks' || action === 'remove-hooks') {
         if (action === 'remove-hooks') companion.disable();
         await updateHooksFile({ file: hooksFile, command, remove: action === 'remove-hooks' });
+      } else if (action === 'install-claude-hooks' || action === 'remove-claude-hooks') {
+        if (action === 'remove-claude-hooks') companion.disable();
+        await updateHooksFile({ file: claudeSettingsFile(), command: claudeCommand, remove: action === 'remove-claude-hooks', merge: mergeClaudeHooks });
       } else if (action === 'extension-folder') {
         const error = await shell.openPath(extensionPath); if (error) throw new Error('The extension folder could not be opened. Copy its path instead.');
       } else if (action === 'login') {
@@ -118,7 +127,7 @@ async function initialize() {
 }
 
 if (process.argv.includes('--interlude-uninstall')) {
-  try { await updateHooksFile({ file: hooksFile, command, remove: true }); app.exit(0); }
+  try { await updateHooksFile({ file: hooksFile, command, remove: true }); await updateHooksFile({ file: claudeSettingsFile(), command: claudeCommand, remove: true, merge: mergeClaudeHooks }); app.exit(0); }
   catch { app.exit(1); }
 } else if (!app.requestSingleInstanceLock()) app.quit();
 else {

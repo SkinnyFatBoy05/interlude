@@ -1,10 +1,10 @@
 {
   "name": "interlude",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "SkinnyFatBoy05",
   "private": true,
   "license": "UNLICENSED",
-  "description": "A local companion for the moments between Codex prompts.",
+  "description": "Media and learning breaks between Claude and Codex prompts.",
   "type": "module",
   "main": "desktop/bootstrap.cjs",
   "engines": {
@@ -29,7 +29,10 @@
     "package:release": "node scripts/package-release.mjs",
     "hooks:preview": "node scripts/install-hooks.mjs --preview",
     "hooks:install": "node scripts/install-hooks.mjs --install",
-    "hooks:remove": "node scripts/install-hooks.mjs --remove"
+    "hooks:remove": "node scripts/install-hooks.mjs --remove",
+    "hooks:claude:preview": "node scripts/install-claude-hooks.mjs --preview",
+    "hooks:claude:install": "node scripts/install-claude-hooks.mjs --install",
+    "hooks:claude:remove": "node scripts/install-claude-hooks.mjs --remove"
   },
   "dependencies": {
     "ws": "8.21.3"

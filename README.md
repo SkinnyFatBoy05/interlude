@@ -2,12 +2,14 @@
 
 Enjoy the wait. Come back knowing what happened.
 
-Interlude connects Codex desktop with one media tab in Chrome, Brave, or Edge. It runs locally on Windows and macOS, with no cloud account or language-model API key.
+Interlude connects Claude and Codex task surfaces with one media tab in Chrome, Brave, or Edge. Website mode runs in the extension alone; desktop applications use the local companion on Windows and macOS. No Interlude cloud account or language-model API key is needed.
 
-- **Fun mode:** switches to your chosen media tab while Codex works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to Codex.
+**0.5 integration preview:** Claude/Codex website monitoring, local Claude Code hooks, and an opt-in Claude Chat/Cowork accessibility observer are available for testing. Start with [assistant integrations](docs/assistant-integrations.md) for the exact setup and verification limits. These new UI adapters are not yet certified against live signed-in services.
+
+- **Fun mode:** switches to your chosen media tab while the watched assistant works. On completion, a permission request, or a supported question, it pauses playback and attempts to return to the assistant.
 - **Locked-in mode:** shows short lessons based on dependencies declared in your project's `package.json`, with evidence and questions. Observed tool events explain what changed.
 
-Version 0.4 is a **desktop release candidate** with all-project monitoring, separate task states, an attention queue, Windows/macOS installers, and 19 experimental media targets. Start with the [desktop setup guide](docs/desktop-release.md). A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking Codex yourself. See the [verification record](docs/release-verification.md) for measured results and remaining public-release gates.
+The desktop companion includes all-project Code hook monitoring, separate task states, an attention queue, Windows/macOS builds, and 19 experimental media targets. Start with the [desktop setup guide](docs/desktop-release.md). A registered service is an adapter target, not a promise that every proprietary player works. OS focus restrictions can require clicking the assistant yourself. See the [verification record](docs/release-verification.md) for measured results and remaining public-release gates.
 
 ## Install the desktop app
 

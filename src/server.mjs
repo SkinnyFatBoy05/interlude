@@ -12,6 +12,7 @@ import { projectLessons, activityLesson } from './lessons.mjs';
 import * as nativePlatform from './platform.mjs';
 import { Preferences } from './preferences.mjs';
 import { supportSummary } from './support.mjs';
+import { DesktopObserver } from './desktop-observer.mjs';
 
 const WEB = path.join(ROOT, 'web');
 const files = new Map([['/', ['index.html', 'text/html']], ['/app.js', ['app.js', 'text/javascript']], ['/style.css', ['style.css', 'text/css']]]);
@@ -32,7 +33,7 @@ async function bodyJson(req, limit = 16000) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw Object.assign(new Error('Invalid JSON.'), { status: 400 }); }
 }
 
-export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFocus = nativePlatform.focusCodex, nativeDiagnostics = nativePlatform.platformDiagnostics, showLearning, heartbeatMs = 15000, commandTimeoutMs = 2200, preferencesDirectory = token === undefined ? stateDirectory(cwd) : null } = {}) {
+export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFocus = nativePlatform.focusCodex, nativeDiagnostics = nativePlatform.platformDiagnostics, nativeObserve = nativePlatform.observeClaude, showLearning, heartbeatMs = 15000, commandTimeoutMs = 2200, preferencesDirectory = token === undefined ? stateDirectory(cwd) : null } = {}) {
   const config = token === undefined ? await loadConfig(stateDirectory(cwd), { legacyDirectory: path.join(cwd, '.local') }) : { token };
   const secret = config.token;
   if (typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret)) throw new Error('Invalid local pairing token.');
@@ -51,6 +52,9 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   let diagnostics = null;
   let diagnosticsTask = null;
   let diagnosticsController = null;
+  let claudeObserver = false, observerBusy = false, observerGeneration = 0, observerController = null;
+  let observerMessage = 'Off. Claude Code uses hooks; Chat/Cowork can use visible controls.';
+  const observer = new DesktopObserver({ cwd, receive: event => { dispatch(session.receive(event)); publish(); } });
   let lessons = await projectLessons(cwd);
   let lessonScope = cwd;
   let lessonRequest = 0;
@@ -73,7 +77,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
   let actualPort = port;
   const origin = () => `http://127.0.0.1:${actualPort}`;
   const send = (ws, value) => { if (ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify(value)); } catch { ws.terminate(); } } };
-  const snapshot = () => ({ ...session.state, browser, lessons: lessons.length ? lessons : [activityLesson], scope: cwd, platform: process.platform, version, desktop: typeof showLearning === 'function', diagnostics, demo: demo?.state ?? null });
+  const snapshot = () => ({ ...session.state, claudeObserver, observerMessage, browser, lessons: session.state.surface === 'desktop-ui' ? [activityLesson] : lessons.length ? lessons : [activityLesson], scope: cwd, platform: process.platform, version, desktop: typeof showLearning === 'function', diagnostics, demo: demo?.state ?? null });
   const publish = () => { refreshLessons(); for (const ws of sockets) if (ws.role === 'dashboard') send(ws, { type: 'state', state: snapshot() }); };
 
   function syncActions() {
@@ -100,7 +104,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
 
   async function effect(item, epoch, signal) {
     const current = () => !closing && !signal.aborted && epoch === session.epoch;
-    if (!current()) return;
+    if (!current() || browser.webMonitoring) return;
     if (item.type !== 'pause' && (!session.state.enabled || session.state.manualHold || (item.turn && item.turn !== session.state.turn))) return;
     if (item.type === 'pause') {
       if (extension) {
@@ -122,10 +126,11 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
       const pause = await command('pause', { reason: item.reason }, signal);
       // A new prompt or disarm while the browser acknowledges must cancel this return.
       if (!current() || !session.state.enabled || item.turn !== session.state.turn || session.state.status === 'running') return;
-      const note = item.reason === 'permission' ? 'Codex may need permission.' : item.reason === 'input' ? 'Codex has a question for you.' : 'Codex finished responding. Review its result.';
+      const assistant = session.state.provider === 'claude' ? 'Claude' : 'Codex';
+      const note = item.reason === 'permission' ? `${assistant} may need permission.` : item.reason === 'input' ? `${assistant} has a question for you.` : `${assistant} finished responding. Review its result.`;
       session.note(pause.ok ? note : `${note} ${pause.message || 'Video pause was not confirmed.'}`);
       if (session.state.autoReturn) {
-        const result = await boundedNative(nativeFocus, { maximize: session.state.maximize }, signal);
+        const result = await boundedNative(nativeFocus, { maximize: session.state.maximize, provider: session.state.provider }, signal);
         if (!current()) return;
         if (!result.focused) session.note(`${session.state.notice} ${result.message || 'Open Codex manually.'}`);
         else if (session.state.minimize && pause.ok) await command('minimize', {}, signal);
@@ -187,6 +192,8 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json' || (req.headers['content-encoding'] && req.headers['content-encoding'] !== 'identity')) return reply(415, { error: 'Send uncompressed JSON.' });
         const event = await bodyJson(req);
         if (!validEvent(event)) return reply(400, { error: 'Invalid event.' });
+        if (event.surface !== undefined) return reply(400, { error: 'Desktop observations must originate in the companion.' });
+        if (claudeObserver && event.provider === 'claude') return reply(200, { ok: true });
         dispatch(session.receive(event));
         if (event.event === 'PostToolUse' && event.files.includes('package.json') && event.cwd === session.activeCwd) refreshLessons(true);
         publish();
@@ -239,7 +246,8 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         if (extension !== ws) return;
         if (message.type === 'browser') {
           const rejoined = (!browser.selected && message.selected === true) || (!browser.mediaReady && message.mediaReady === true);
-          browser = { connected: true, selected: message.selected === true, mediaReady: message.selected === true && message.mediaReady === true, platform: typeof message.platform === 'string' ? message.platform.slice(0, 40) : '', title: typeof message.title === 'string' ? message.title.slice(0, 120) : '', message: typeof message.message === 'string' ? message.message.slice(0, 180) : '' };
+          browser = { connected: true, webMonitoring: message.webMonitoring === true, selected: message.selected === true, mediaReady: message.selected === true && message.mediaReady === true, platform: typeof message.platform === 'string' ? message.platform.slice(0, 40) : '', title: typeof message.title === 'string' ? message.title.slice(0, 120) : '', message: typeof message.message === 'string' ? message.message.slice(0, 180) : '' };
+          if (browser.webMonitoring && session.state.enabled) { dispatch(session.update({ enabled: false })); session.note('Website monitoring controls playback. Turn it off in the extension before enabling desktop handoffs.'); }
           if (rejoined && awaiting.size === 0) { session.browserRejoined(); syncActions(); }
           publish();
         } else if (message.type === 'ack' && awaiting.has(message.id)) {
@@ -250,10 +258,20 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         return;
       }
       try {
-        if (message.type === 'settings') {
+        if (message.type === 'claude-observer') {
+          if (typeof message.enabled !== 'boolean') throw new Error('Invalid observer setting.');
+          if (session.state.enabled) throw new Error('Turn off monitoring before changing Claude desktop observation.');
+          claudeObserver = message.enabled; observerGeneration++; observerController?.abort(); observer.reset();
+          session.clearProvider('claude'); syncActions();
+          observerMessage = claudeObserver ? 'Ready. Keep your Claude Chat/Cowork task selected. English controls only; enable monitoring to observe.' : 'Off. Claude Code hooks are active again.';
+          publish();
+        }
+        else if (message.type === 'settings') {
+          if (message.patch?.enabled === true && browser.webMonitoring) throw new Error('Turn off website monitoring in the extension before enabling desktop handoffs.');
           dispatch(session.update(message.patch));
           preferences.save(session.state).catch(() => { if (!closing) { session.note('Preferences could not be saved. These settings apply until you quit.'); publish(); } });
           if (session.state.enabled && demo) { demo = null; clearInterval(demoTimer); }
+          if (!session.state.enabled) { observerGeneration++; observerController?.abort(); observer.reset(); }
           publish();
         }
         else if (message.type === 'acknowledge') {
@@ -266,9 +284,9 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
           publish();
           const result = await command('pause', {}, signal);
           if (!current()) return;
-          const note = result.ok ? 'Media paused. Returning to Codex.' : result.message || 'Media pause was not confirmed.';
+          const note = result.ok ? `Media paused. Returning to ${session.state.provider === 'claude' ? 'Claude' : 'Codex'}.` : result.message || 'Media pause was not confirmed.';
           session.note(note);
-          const focused = await boundedNative(nativeFocus, { maximize: session.state.maximize }, signal);
+          const focused = await boundedNative(nativeFocus, { maximize: session.state.maximize, provider: session.state.provider }, signal);
           if (!current()) return;
           if (!focused.focused) session.note(`${note} ${focused.message || 'Open Codex manually.'}`);
           publish();
@@ -276,7 +294,7 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
         else if (message.type === 'diagnostics') {
           if (!diagnosticsTask) {
             diagnosticsController = new AbortController();
-            diagnosticsTask = boundedNative(nativeDiagnostics, {}, diagnosticsController.signal)
+            diagnosticsTask = boundedNative(nativeDiagnostics, { provider: session.state.provider }, diagnosticsController.signal)
               .catch(() => ({ platform: process.platform, supported: false, helperReady: false, code: 'helper_failed', message: 'Desktop diagnostics could not finish.' }))
               .then(result => { if (!closing) { diagnostics = { ...result, checkedAt: Date.now() }; publish(); } })
               .finally(() => { diagnosticsTask = null; diagnosticsController = null; });
@@ -328,16 +346,29 @@ export async function createCompanion({ port = PORT, token, cwd = ROOT, nativeFo
       if (ws.readyState === WebSocket.OPEN) ws.ping();
     }
   }, heartbeatMs);
+  const observationTimer = setInterval(async () => {
+    if (closing || observerBusy || !claudeObserver || !session.state.enabled) return;
+    observerBusy = true;
+    const generation = observerGeneration;
+    observerController = new AbortController();
+    try {
+      const result = await boundedNative(nativeObserve, {}, observerController.signal);
+      if (closing || !claudeObserver || !session.state.enabled || generation !== observerGeneration) return;
+      observerMessage = observer.sample(result) || result.message || 'Claude controls unavailable.'; publish();
+    } catch { if (!closing && generation === observerGeneration) { observer.sample({}); observerMessage = 'Claude controls unavailable. Open Claude or use Code hooks.'; publish(); } }
+    finally { observerBusy = false; }
+  }, 1500);
   try { await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); }); }
-  catch (error) { clearInterval(interval); clearInterval(heartbeat); wss.close(); throw error; }
+  catch (error) { clearInterval(interval); clearInterval(heartbeat); clearInterval(observationTimer); wss.close(); throw error; }
   actualPort = server.address().port;
   return {
     origin: origin(), token: secret, session,
     support: () => supportSummary(snapshot()),
-    disable: () => { dispatch(session.update({ enabled: false })); publish(); },
+    disable: () => { observerGeneration++; observerController?.abort(); observer.reset(); dispatch(session.update({ enabled: false })); publish(); },
     close: async () => {
       if (closing) return;
       closing = true; session.update({ enabled: false }); actionController.abort(); diagnosticsController?.abort();
+      observerController?.abort(); clearInterval(observationTimer);
       clearInterval(interval); clearInterval(heartbeat); clearInterval(demoTimer);
       if (extension?.readyState === WebSocket.OPEN) await command('release', {}, new AbortController().signal, 250);
       for (const ws of sockets) ws.terminate();

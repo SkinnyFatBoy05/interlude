@@ -14,7 +14,7 @@ let diagnosticRequestedAt = 0;
 let bridgeReady = false;
 const desktop = window.interludeDesktop;
 let desktopState;
-const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'next', 'previous', 'reveal'];
+const connectedControls = ['fun-mode', 'learn-mode', 'toggle', 'return', 'acknowledge', 'demo-start', 'demo-close', 'autoReturn', 'maximize', 'resume', 'minimize', 'check-setup', 'next', 'previous', 'reveal', 'claude-observer'];
 function connectionReady(ready) {
   bridgeReady = ready;
   $('connection-dot').classList.toggle('online', ready);
@@ -36,7 +36,7 @@ const copy = {
   permission: ['Your attention is needed', 'A decision is waiting.', 'Codex requested permission. Review the request in Codex before it continues.'],
   input: ['Your attention is needed', 'Codex has a question.', 'Your answer can guide what happens next. Return to the task to respond.'],
   complete: ['Time to come back', 'Your response is ready.', 'Review what Codex changed and decide your next step.'],
-  interrupted: ['Turn stopped', 'Take it from here.', 'You interrupted this turn. A new prompt starts the next loop.'],
+  interrupted: ['Turn stopped', 'Take it from here.', 'This turn stopped or its state became unavailable. A new prompt starts the next loop.'],
   disconnected: ['Codex session ended', 'We’ve paused the handoff.', 'Open your task in Codex and send a new prompt when you are ready.'],
 };
 
@@ -45,6 +45,10 @@ function render() {
   const view = state.demo ?? state;
   const learning = state.mode === 'learn';
   const isDemo = Boolean(state.demo);
+  const assistant = view.provider === 'claude' || (view.status === 'idle' && state.claudeObserver) ? 'Claude' : 'Codex';
+  $('claude-observer').checked = state.claudeObserver === true;
+  $('claude-observer').disabled = !bridgeReady || state.enabled;
+  $('observer-status').textContent = state.observerMessage || '';
   $('fun-mode').classList.toggle('selected', !learning);
   $('learn-mode').classList.toggle('selected', learning);
   $('fun-mode').setAttribute('aria-pressed', String(!learning));
@@ -54,7 +58,10 @@ function render() {
   if (learning && view.status === 'running') { text[1] = 'Build your understanding.'; text[2] = 'Explore a concept from your project while Codex keeps working.'; }
   if (learning && state.desktop && view.status === 'idle') text[2] = 'Connect Codex, then turn on Interlude. A media tab is optional in Locked-in mode.';
   if (view.status === 'idle' && state.enabled) { text[0] = 'Interlude is on'; text[2] = 'Send your next prompt in Codex. The handoff begins after a short pause.'; }
-  $('status-label').textContent = text[0]; $('status-title').textContent = text[1]; $('status-description').textContent = text[2];
+  $('status-label').textContent = text[0].replaceAll('Codex', assistant); $('status-title').textContent = text[1].replaceAll('Codex', assistant); $('status-description').textContent = text[2].replaceAll('Codex', assistant);
+  $('mode-description').textContent = $('mode-description').textContent.replaceAll('Codex', assistant);
+  if (learning && state.claudeObserver && (view.surface === 'desktop-ui' || view.status === 'idle')) $('mode-description').textContent = 'Learn a general programming concept while Claude works. Desktop observation does not inspect your project.';
+  $('return').textContent = `Return to ${assistant} now`;
   $('status-panel').dataset.state = view.status;
   document.body.dataset.mode = learning ? 'learn' : 'fun';
   $('status-dot').classList.toggle('running', view.status === 'running');
@@ -64,15 +71,15 @@ function render() {
   $('return').hidden = isDemo || !state.enabled || view.status === 'idle';
   $('demo-banner').hidden = !isDemo; $('demo-controls').hidden = !isDemo;
   $('demo-start').textContent = isDemo ? 'Restart demo' : 'Try a demo';
-  $('codex-status').textContent = state.hookSeenAt ? 'Hooks detected' : 'Waiting for a prompt';
-  $('chat-status').textContent = isDemo ? 'Beta · Demo events only' : `Beta · All local Codex projects · ${state.runningCount ?? 0} working · ${state.attentionCount ?? 0} awaiting acknowledgement`;
+  $('codex-status').textContent = state.hookSeenAt ? state.surface === 'desktop-ui' ? 'Claude controls detected' : 'Hooks detected' : 'Waiting for a prompt';
+  $('chat-status').textContent = isDemo ? 'Beta · Demo events only' : `Preview · ${state.claudeObserver ? 'Codex projects + selected Claude task' : 'All local Codex and Claude Code projects'} · ${state.runningCount ?? 0} working · ${state.attentionCount ?? 0} awaiting acknowledgement`;
   $('acknowledge').hidden = isDemo || !state.attentionCount;
   $('task-rail').hidden = isDemo || !state.sessionCount;
   $('chat-list').hidden = isDemo || !state.sessionCount;
   $('chat-list').replaceChildren();
   for (const task of state.tasks ?? []) {
     const row = document.createElement('li');
-    row.textContent = `${task.project} · ${task.id.slice(0, 8)} · ${task.status}${task.needsAttention ? ' — needs you' : ''}`;
+    row.textContent = `${task.provider === 'claude' ? 'Claude' : 'Codex'} · ${task.project} · ${task.id.slice(-8)} · ${task.status}${task.needsAttention ? ' — needs you' : ''}`;
     $('chat-list').append(row);
   }
   $('media-name').textContent = platformNames[state.browser.platform] || 'Media';
@@ -82,7 +89,7 @@ function render() {
   $('media-message').hidden = !state.browser.connected || state.browser.mediaReady || !state.browser.message;
   $('connect-browser').textContent = state.browser.connected ? 'Browser setup' : 'Connect browser';
   for (const key of ['autoReturn', 'maximize', 'resume', 'minimize']) $(key).checked = state[key];
-  $('scope').textContent = `Watching all local Codex projects. Current project: ${state.activeProject ?? state.scope}. Returns open the Codex window, not an individual chat.`;
+  $('scope').textContent = state.surface === 'desktop-ui' ? 'Observing visible Claude controls. No project files or conversation content are collected.' : `Watching local Codex and Claude Code projects. Current project: ${state.activeProject ?? state.scope}. Returns open the assistant window, not an individual chat.`;
   $('extension-path').textContent = state.scope.replace(/[\\/]$/, '') + (state.platform === 'win32' ? '\\' : '/') + 'extension';
   const npm = state.platform === 'win32' ? 'npm.cmd' : 'npm';
   $('hook-commands').replaceChildren(document.createTextNode(`${npm} run hooks:preview`), document.createElement('br'), document.createTextNode(`${npm} run hooks:install`));
@@ -192,6 +199,11 @@ $('next').addEventListener('click', () => { if (state.lessons.length) concept = 
 $('previous').addEventListener('click', () => { if (state.lessons.length) concept = (concept + state.lessons.length - 1) % state.lessons.length; render(); });
 setInterval(updateElapsed, 1000);
 function renderDesktop(value) {
+  $('claude-desktop-setup').hidden = false;
+  $('claude-source-setup').hidden = true;
+  $('remove-claude-hooks').hidden = !value.claudeInstalled;
+  $('install-claude-hooks').textContent = value.claudeInstalled ? 'Reconnect Claude Code' : 'Connect Claude Code';
+  $('claude-setup-status').textContent = value.claudeInstalled ? 'Hooks installed. Review Claude Code /hooks and start a new Code session.' : 'Connect to receive local Claude Code events.';
   desktopState = value;
   $('desktop-settings').hidden = false;
   $('desktop-hook-setup').hidden = false;
@@ -205,13 +217,15 @@ function renderDesktop(value) {
   $('desktop-setup-status').textContent = value.hooksInstalled ? 'Hooks installed. Review and trust them in Codex /hooks.' : 'Connect to install the passive event hooks. Your existing hooks are preserved.';
 }
 async function desktopAction(method, value) {
-  const buttons = ['install-desktop-hooks', 'remove-desktop-hooks', 'open-extension-folder', 'check-updates'];
+  const buttons = ['install-desktop-hooks', 'remove-desktop-hooks', 'install-claude-hooks', 'remove-claude-hooks', 'open-extension-folder', 'check-updates'];
   buttons.forEach(id => $(id).disabled = true);
   try { renderDesktop(await desktop[method](value)); }
   catch (error) { toast(error.message || 'Desktop setup could not finish.'); if (desktopState) $('launch-at-login').checked = desktopState.openAtLogin; }
   finally { buttons.forEach(id => $(id).disabled = false); }
 }
 if (desktop) {
+  $('install-claude-hooks').addEventListener('click', () => desktopAction('installClaudeHooks'));
+  $('remove-claude-hooks').addEventListener('click', () => desktopAction('removeClaudeHooks'));
   desktop.status().then(renderDesktop).catch(() => toast('Codex setup could not be read. Check your hooks configuration.'));
   $('install-desktop-hooks').addEventListener('click', () => desktopAction('installHooks'));
   $('remove-desktop-hooks').addEventListener('click', () => desktopAction('removeHooks'));
@@ -219,5 +233,6 @@ if (desktop) {
   $('launch-at-login').addEventListener('change', () => desktopAction('setLogin', $('launch-at-login').checked));
   $('check-updates').addEventListener('click', () => desktopAction('updates'));
 }
+$('claude-observer').addEventListener('change', () => send({ type: 'claude-observer', enabled: $('claude-observer').checked }));
 connectionReady(false);
 connect();

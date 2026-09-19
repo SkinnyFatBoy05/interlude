@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 — assistant integration preview
+
+- Add standalone, opt-in Claude chat, Claude Code web and Codex web task monitoring in the Chromium extension, with exact-tab return and general Locked-in lessons.
+- Add passive Claude Code hook setup/removal, prompt-ID isolation, permission/result correlation and provider-specific native return; preserve existing Codex integration and unrelated hook settings.
+- Add an experimental opt-in Claude desktop Chat/Cowork accessibility observer for Windows/macOS. Hidden chats are not tracked; inaccessible or unknown task state pauses playback without claiming completion.
+- Coordinate website/desktop playback ownership, queue attention from multiple website tabs, cancel stale navigation actions and check lost task heartbeats.
+- Keep live website, actual Chat/Cowork accessibility-tree and Mac focus/Spaces acceptance explicitly unverified until exercised. This is an integration preview, not a certified public release.
+
 ## 0.4.0 — desktop release candidate
 
 - Add a sandboxed desktop app, Windows installer and macOS DMG/ZIP builds with a bundled hook runtime and compiled native helpers.
